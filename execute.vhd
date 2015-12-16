@@ -257,11 +257,11 @@ begin
       use_after_load_stall <= '0';
       if FORWARD_ONLY_FROM_ALU then
         if (ni_rs2 = rd or ni_rs1 = rd) and not current_alu then
-          use_after_load_stall <= valid_instr;
+          use_after_load_stall <= valid_instr and not stall_pipeline;
         end if;
       else
         if (ni_rs2 = rd or ni_rs1 = rd) and opcode = LD_OP then
-          use_after_load_stall <= valid_instr;
+          use_after_load_stall <= valid_instr and not stall_pipeline;
         end if;
       end if;
 
