@@ -1,4 +1,4 @@
-all: vblox1.sof
+
 
 QSYS_FILE=vblox1.qsys
 QPF_FILE=vblox1.qpf
@@ -9,7 +9,7 @@ FIT_RPT_FILE=$(OUTPUT_DIR)vblox1.fit.rpt
 ASM_RPT_FILE=$(OUTPUT_DIR)vblox1.asm.rpt
 MIF_RPT_FILE=$(OUTPUT_DIR)vblox1.mif_update.rpt
 STA_RPT_FILE=$(OUTPUT_DIR)vblox1.sta.rpt
-
+all: vblox1.sof  $(STA_RPT_FILE)
 
 DEVICE_FAMILY=$(shell grep deviceFamily $(QSYS_FILE) | head -1 | sed 's/.*value="\(.*\)".*/\1/')
 VHDL_FILES=$(wildcard ../*.vhd)
@@ -60,7 +60,7 @@ $(FIT_RPT_FILE) : $(MAP_RPT_FILE)
 	quartus_fit $(QPF_FILE)
 $(STA_RPT_FILE) : $(FIT_RPT_FILE)
 	quartus_sta $(QPF_FILE)
-$(MIF_RPT_FILE) : $(STA_RPT_FILE) $(HEX_FILE)
+$(MIF_RPT_FILE) : $(FIT_RPT_FILE) $(HEX_FILE)
 	quartus_cdb --update_mif $(QPF_FILE)
 $(ASM_RPT_FILE) : $(MIF_RPT_FILE)
 	quartus_asm $(QPF_FILE)

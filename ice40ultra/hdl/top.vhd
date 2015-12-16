@@ -13,10 +13,10 @@ entity top is
     reset_btn : in std_logic;
 
     --uart
-    rxd : in std_logic;
-    txd : out std_logic;
-    cts : in std_logic;
-    rts : out std_logic;
+    rxd       : in    std_logic;
+    txd       : out   std_logic;
+    cts       : in    std_logic;
+    rts       : out   std_logic;
     --uart_pmod : inout std_logic_vector(3 downto 0);
     --pmodmic0
     mic0_pmod : inout std_logic_vector(3 downto 0);
@@ -216,11 +216,21 @@ architecture rtl of top is
   alias mic1_sdata : std_logic is mic1_pmod(2);  --pmod(2)
   alias mic1_sclk  : std_logic is mic1_pmod(3);  --pmod(3)
 
-
+  signal auto_reset_count : unsigned(3 downto 0):= (others => '0');
+  signal auto_reset       : std_logic;
 begin
-
-
-  reset <= not reset_btn;
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      if auto_reset_count /= "1111" then
+        auto_reset_count <= auto_reset_count +1;
+        auto_reset       <= '1';
+      else
+        auto_reset <= '0';
+      end if;
+    end if;
+  end process;
+  reset <= not reset_btn or auto_reset;
 
   mem : component wb_ram
     generic map(
@@ -304,8 +314,9 @@ begin
 
   rv : component riscV_wishbone
     generic map (
-      MULTIPLY_ENABLE => 0,
-      SHIFTER_SINGLE_CYCLE => 1)
+      MULTIPLY_ENABLE      => 0,
+      SHIFTER_SINGLE_CYCLE => 0,
+      INCLUDE_COUNTERS     => 1)
     port map(
 
       clk   => clk,
@@ -608,7 +619,7 @@ begin
   -- UART signals and interface
   -----------------------------------------------------------------------------
   --PmodUSBUART (0->RTS, 1->RXD, 2->TXD, 3->CTS)
-  cts_n     <= cts ;
+  cts_n     <= cts;
   txd       <= serial_out;
   serial_in <= rxd;
   rts       <= rts_n;

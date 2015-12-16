@@ -516,7 +516,7 @@ if 0:
       ]
 else:
 
-    for bp in ["false","true"]:
+    for bp in ["false"]:
         for btb_size in ["1","16","256","4096"]:
             if bp== "false" and btb_size != "1":
                 continue;
@@ -564,8 +564,10 @@ if __name__ == '__main__':
     for s in SYSTEMS:
         s.create_build_dir()
 
-    for s in SYSTEMS:
+    for i,s in enumerate(SYSTEMS,1):
+
         if not args.stats_only:
+            print "Submitting job %d/%d"%(i,len(SYSTEMS))
             processes.append(
                 s.build(args.use_qsub,args.build_target))
         if not args.no_stats and not args.skip_dhrystone:
