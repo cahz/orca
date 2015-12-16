@@ -231,40 +231,11 @@ begin  -- architecture rtl
   sub <= op1+op2 when is_add else op1 - op2;
 
 
-  shifter_multiply <= SHIFT_LEFT(to_signed(1, REGISTER_SIZE+1), to_integer(shift_amt));
-  --shifter_multiply <=
-  --  "0"&x"00000001" when shift_amt = x"00"else
-  --  "0"&x"00000002" when shift_amt = x"01"else
-  --  "0"&x"00000004" when shift_amt = x"02"else
-  --  "0"&x"00000008" when shift_amt = x"03"else
-  --  "0"&x"00000010" when shift_amt = x"04"else
-  --  "0"&x"00000020" when shift_amt = x"05"else
-  --  "0"&x"00000040" when shift_amt = x"06"else
-  --  "0"&x"00000080" when shift_amt = x"07"else
-  --  "0"&x"00000100" when shift_amt = x"08"else
-  --  "0"&x"00000200" when shift_amt = x"09"else
-  --  "0"&x"00000400" when shift_amt = x"0A"else
-  --  "0"&x"00000800" when shift_amt = x"0B"else
-  --  "0"&x"00001000" when shift_amt = x"0C"else
-  --  "0"&x"00002000" when shift_amt = x"0D"else
-  --  "0"&x"00004000" when shift_amt = x"0E"else
-  --  "0"&x"00008000" when shift_amt = x"0F"else
-  --  "0"&x"00010000" when shift_amt = x"10"else
-  --  "0"&x"00020000" when shift_amt = x"11"else
-  --  "0"&x"00040000" when shift_amt = x"12"else
-  --  "0"&x"00080000" when shift_amt = x"13"else
-  --  "0"&x"00100000" when shift_amt = x"14"else
-  --  "0"&x"00200000" when shift_amt = x"15"else
-  --  "0"&x"00400000" when shift_amt = x"16"else
-  --  "0"&x"00800000" when shift_amt = x"17"else
-  --  "0"&x"01000000" when shift_amt = x"18"else
-  --  "0"&x"02000000" when shift_amt = x"19"else
-  --  "0"&x"04000000" when shift_amt = x"1A"else
-  --  "0"&x"08000000" when shift_amt = x"1B"else
-  --  "0"&x"10000000" when shift_amt = x"1C"else
-  --  "0"&x"20000000" when shift_amt = x"1D"else
-  --  "0"&x"40000000" when shift_amt = x"1E"else
-  --  "0"&x"80000000";
+  shift_mul_gen: for n in shifter_multiply'left-1 downto 0 generate
+    shifter_multiply(n) <= '1' when shift_amt = to_unsigned(n,shift_amt'length) else '0';
+  end generate shift_mul_gen;
+  shifter_multiply(shifter_multiply'left) <= '0';
+
 
   m_op1_msk <= '0' when instruction(13 downto 12) = "11" else '1';
   m_op2_msk <= not instruction(13);
