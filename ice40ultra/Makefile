@@ -1,4 +1,5 @@
 all:
+.SUFFIXES:
 
 ifndef ICECUBE2
 ifeq ($(findstring Vectorblox,$(ORGANIZATION)),Vectorblox)
@@ -22,7 +23,8 @@ BITFILE=$(OUTPUT_DIR)/sbt/outputs/bitmap/$(TOP_LEVEL_ENTITY)_bitmap.hex
 MEM_LIST=imem.list
 MEM_FILE=test.mem
 HDL_FILES=$(wildcard hdl/*.vhd) $(wildcard hdl/*.v) $(wildcard ../*.vhd)
-all: $(BITFILE)
+all: build-software bit
+bit: $(BITFILE)
 
 $(BITFILE): $(TIMING_REPORT) $(MEM_FILE) $(MEM_LIST)
 	ICECUBE2=$(ICECUBE2) tclsh iCEcube2_flow.tcl $(MEM_FILE) $(MEM_LIST)
@@ -44,7 +46,16 @@ $(EDF): $(HDL_FILES)
 syn: $(EDF)
 
 
-.phony: syn all clean
+
 
 clean:
 	rm -rf $(OUTPUT_DIR) *.imem
+
+clean-all: clean
+	make -C software clean
+
+build-software:
+	make -C software FORMAT=mem
+	ln -sf software/*.mem $(MEM_FILE)
+
+.phony: syn all clean clean-all build-software bit

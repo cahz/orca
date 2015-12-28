@@ -44,7 +44,6 @@ int main()
 {
 	int i=0;
 	int colour=0x01;
-	char brightness=3;
 	UART_INIT();
 	init_printf(0,mputc);
 

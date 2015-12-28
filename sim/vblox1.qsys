@@ -7,7 +7,7 @@
    description=""
    tags=""
    categories="System" />
- <parameter name="bonusData"><![CDATA[bonusData 
+ <parameter name="bonusData"><![CDATA[bonusData
 {
    element $${FILENAME}
    {
@@ -291,7 +291,7 @@
   <parameter name="BTB_SIZE" value="0" />
   <parameter name="DIVIDE_ENABLE" value="1" />
   <parameter name="FORWARD_ALU_ONLY" value="1" />
-  <parameter name="INCLUDE_COUNTERS" value="1" />
+  <parameter name="COUNTER_LENGTH" value="1" />
   <parameter name="MULTIPLY_ENABLE" value="1" />
   <parameter name="PIPELINE_STAGES" value="4" />
   <parameter name="REGISTER_SIZE" value="32" />

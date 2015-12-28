@@ -12,7 +12,7 @@ entity riscV_wishbone is
     MULTIPLY_ENABLE      : natural range 0 to 1 := 0;
     DIVIDE_ENABLE        : natural range 0 to 1 := 0;
     SHIFTER_SINGLE_CYCLE : natural range 0 to 2 := 0;
-    INCLUDE_COUNTERS     : natural range 0 to 1 := 0;
+    COUNTER_LENGTH       : natural              := 64;
     BRANCH_PREDICTORS    : natural              := 0;
     FORWARD_ALU_ONLY     : natural range 0 to 1 := 1);
 
@@ -106,7 +106,7 @@ begin  -- architecture rtl
       MULTIPLY_ENABLE      => MULTIPLY_ENABLE,
       DIVIDE_ENABLE        => DIVIDE_ENABLE,
       SHIFTER_SINGLE_CYCLE => SHIFTER_SINGLE_CYCLE,
-      INCLUDE_COUNTERS     => INCLUDE_COUNTERS,
+      COUNTER_LENGTH       => COUNTER_LENGTH,
       BRANCH_PREDICTORS    => BRANCH_PREDICTORS,
       FORWARD_ALU_ONLY     => FORWARD_ALU_ONLY)
     port map(

@@ -43,7 +43,7 @@ class system:
                  branch_prediction,
                  btb_size,
                  divide_enable,
-                 include_counters,
+                 counter_length,
                  multiply_enable,
                  pipeline_stages,
                  shifter_single_cycle,
@@ -51,7 +51,7 @@ class system:
         self.branch_prediction=branch_prediction
         self.btb_size=btb_size
         self.divide_enable=divide_enable
-        self.include_counters=include_counters
+        self.counter_length=counter_length
         self.multiply_enable=multiply_enable
         self.pipeline_stages=pipeline_stages
         self.shifter_single_cycle=shifter_single_cycle
@@ -69,7 +69,7 @@ class system:
                                    self.btb_size if self.branch_prediction == "true" else "0" ,
                                    self.divide_enable,
                                    self.multiply_enable,
-                                   self.include_counters,
+                                   self.counter_length,
                                    self.pipeline_stages,
                                    self.shifter_single_cycle,
                                    self.fwd_alu_only)
@@ -93,7 +93,7 @@ class system:
             f.write('BTB_SIZE="%s"\n'            %self.btb_size)
             f.write('MULTIPLY_ENABLE="%s"\n'     %self.multiply_enable)
             f.write('DIVIDE_ENABLE="%s"\n'       %self.divide_enable)
-            f.write('INCLUDE_COUNTERS="%s"\n'    %self.include_counters)
+            f.write('COUNTER_LENGTH="%s"\n'    %self.counter_length)
             f.write('PIPELINE_STAGES="%s"\n'     %self.pipeline_stages)
             f.write('SHIFTER_SINGLE_CYCLE="%s"\n'%self.shifter_single_cycle)
             f.write('FORWARD_ALU_ONLY="%s"\n'    %self.fwd_alu_only)
@@ -114,14 +114,6 @@ class system:
                 string=re.sub(x+r"\s*=> [0-9]+",x+" => "+y,f.read())
             with open("vblox1/simulation/vblox1.vhd","w") as f:
                 f.write(string)
-
-
-        if self.include_counters == "0":
-            self.dhrystones="No Count"
-            return proc
-        if self.multiply_enable == "1" and self.divide_enable == "0":
-            self.dhrystones="No Divide"
-            return proc
 
 
         with pushd(self.directory):
@@ -147,7 +139,7 @@ class system:
             replace('BRANCH_PREDICTORS',self.btb_size if self.branch_prediction == "true" else '0')
             replace('MULTIPLY_ENABLE',self.multiply_enable)
             replace('DIVIDE_ENABLE',self.divide_enable)
-            replace('INCLUDE_COUNTERS',self.include_counters)
+            replace('COUNTER_LENGTH',"64" if self.counter_length == "0" else self.counter_length)
             replace('PIPELINE_STAGES',self.pipeline_stages)
             replace('SHIFTER_SINGLE_CYCLE',self.shifter_single_cycle)
             replace('FORWARD_ALU_ONLY',self.fwd_alu_only)
@@ -207,8 +199,8 @@ class system:
             f.write('BRANCH_PREDICTION="%s"\n'   %self.branch_prediction)
             f.write('BTB_SIZE="%s"\n'            %self.btb_size)
             f.write('DIVIDE_ENABLE="%s"\n'       %self.divide_enable)
-            f.write('INCLUDE_COUNTERS="%s"\n'    %self.multiply_enable)
-            f.write('MULTIPLY_ENABLE="%s"\n'     %self.include_counters)
+            f.write('COUNTER_LENGTH="%s"\n'    %self.multiply_enable)
+            f.write('MULTIPLY_ENABLE="%s"\n'     %self.counter_length)
             f.write('SHIFTER_SINGLE_CYCLE="%s"\n'%self.shifter_single_cycle)
             f.write("FORWARD_ALU_ONLY=%s\n"      %self.fwd_alu_only)
             f.write( "fmax=%f\n"                 %self.fmax)
@@ -290,26 +282,28 @@ function insert_chart(element_select,data) {
 
 check_boxes_html="""
 <div >
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="btbsz0">    btbsz0      </input>
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="btbsz1">    btbsz1		</input>
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="btbsz16">   btbsz16		</input>
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="btbsz256">  tbsz256	</input>
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="btbsz4096"> btbsz4096</input>
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="div1">      div1				</input>
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="mul1">      mul1				</input>
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="count1">    count1		</input>
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="pipe3">     pipe3			</input>
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="ssc0">      ssc0				</input>
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="ssc1">      ssc1				</input>
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="ssc2">      ssc2				</input>
-<input class="green-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="fwd1">      fwd1          </input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="btbsz0">    btbsz0      </input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="btbsz1">    btbsz1		</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="btbsz16">   btbsz16		</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="btbsz256">  tbsz256	</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="btbsz4096"> btbsz4096</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="div1">      div1				</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="mul1">      mul1				</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="count0"> count0		</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="count32">count32		</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="count64">count64		</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="pipe3">     pipe3			</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="ssc0">      ssc0				</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="ssc1">      ssc1				</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="ssc2">      ssc2				</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="fwd1">      fwd1          </input>
 <script>
 function toggle_checkbox(k) {
 
    var name =  d3.select(k).attr("name");
    var sel = d3.selectAll("."+name);
    if (d3.select(k).property("checked")){
-      sel.style("fill","green");
+      sel.style("fill","red");
    }else{
       sel.style("fill","steelblue");
    }
@@ -405,7 +399,7 @@ def summarize_stats(systems):
             html.write("<td>%s</td>"%str(sys.btb_size if sys.branch_prediction == "true" else "N/A"))
             html.write("<td>%s</td>"%str(sys.multiply_enable))
             html.write("<td>%s</td>"%str(sys.divide_enable))
-            html.write("<td>%s</td>"%str(sys.include_counters))
+            html.write("<td>%s</td>"%str(sys.counter_length))
             html.write("<td>%s</td>"%str(sys.pipeline_stages))
             html.write("<td>%s</td>"%str(sys.shifter_single_cycle if sys.multiply_enable == "0" else "N/A"))
             html.write("<td>%s</td>"%str(sys.fwd_alu_only))
@@ -436,7 +430,7 @@ if 0:
                      btb_size="1",
                      divide_enable="0",
                      multiply_enable="0",
-                     include_counters="1",
+                     counter_length="1",
                      shifter_single_cycle="0",
                      pipeline_stages="3",
                      fwd_alu_only="1"),
@@ -444,7 +438,7 @@ if 0:
                      btb_size="1",
                      divide_enable="0",
                      multiply_enable="0",
-                     include_counters="0",
+                     counter_length="0",
                      shifter_single_cycle="0",
                      pipeline_stages="4",
                      fwd_alu_only="1"),
@@ -452,7 +446,7 @@ if 0:
                      btb_size="4096",
                      divide_enable="0",
                      multiply_enable="0",
-                     include_counters="0",
+                     counter_length="0",
                      shifter_single_cycle="0",
                      pipeline_stages="4",
                      fwd_alu_only="1"),
@@ -460,7 +454,7 @@ if 0:
                      btb_size="256",
                      divide_enable="0",
                      multiply_enable="0",
-                     include_counters="0",
+                     counter_length="0",
                      shifter_single_cycle="0",
                      pipeline_stages="4",
                      fwd_alu_only="1"),
@@ -468,7 +462,7 @@ if 0:
                      btb_size="1",
                      divide_enable="0",
                      multiply_enable="0",
-                     include_counters="0",
+                     counter_length="0",
                      shifter_single_cycle="1",
                      pipeline_stages="4",
                      fwd_alu_only="1"),
@@ -476,7 +470,7 @@ if 0:
                      btb_size="256",
                      divide_enable="0",
                      multiply_enable="0",
-                     include_counters="0",
+                     counter_length="0",
                      shifter_single_cycle="0",
                      pipeline_stages="3",
                      fwd_alu_only="1"),
@@ -484,7 +478,7 @@ if 0:
                      btb_size="256",
                      divide_enable="1",
                      multiply_enable="1",
-                     include_counters="0",
+                     counter_length="0",
                      shifter_single_cycle="0",
                      pipeline_stages="3",
                      fwd_alu_only="1"),
@@ -492,7 +486,7 @@ if 0:
                      btb_size="4096",
                      divide_enable="1",
                      multiply_enable="1",
-                     include_counters="1",
+                     counter_length="1",
                      shifter_single_cycle="0",
                      pipeline_stages="3",
                      fwd_alu_only="1"),
@@ -500,7 +494,7 @@ if 0:
                      btb_size="256",
                      divide_enable="1",
                      multiply_enable="1",
-                     include_counters="0",
+                     counter_length="0",
                      shifter_single_cycle="0",
                      pipeline_stages="4",
                      fwd_alu_only="1"),
@@ -508,7 +502,7 @@ if 0:
                      btb_size="4096",
                      divide_enable="1",
                      multiply_enable="1",
-                     include_counters="1",
+                     counter_length="1",
                      shifter_single_cycle="0",
                      pipeline_stages="4",
                      fwd_alu_only="1"),
@@ -524,7 +518,7 @@ else:
                 for div in ["0","1"]:
                     if div == "1" and mul == '0':
                         continue;
-                    for ic in ["0","1"]:
+                    for ic in ["0","32","64"]:
                         for ssc in ["0","1","2"]:
                             if mul == '1' and ssc != '0':
                                 continue;
@@ -533,7 +527,7 @@ else:
                                                       btb_size=btb_size,
                                                       divide_enable=div,
                                                       multiply_enable=mul,
-                                                      include_counters=ic,
+                                                      counter_length=ic,
                                                       shifter_single_cycle=ssc,
                                                       pipeline_stages=ps,
                                                       fwd_alu_only="1"))
@@ -547,7 +541,8 @@ if __name__ == '__main__':
     parser.add_argument('-d','--skip-dhrysone',dest='skip_dhrystone',action='store_true',default=False)
     parser.add_argument('-n','--no-stats',dest='no_stats',action='store_true',default=False)
     parser.add_argument('-t','--build-target',dest='build_target',default='all',help='Target to run with make command')
-    parser.add_argument('-q','--use-qsub',dest='use_qsub',action='store_true',default=False, help='Use grid-engine to build systems')
+    parser.add_argument('-q','--no-qsub',dest='use_qsub',action='store_false',default=True, help='Use grid-engine to build systems')
+    parser.add_argument('-m','--max-jobs',dest='max_jobs',action='store',type=int,default=25, help='max grid-engine jobs to run concurrently')
     args=parser.parse_args()
 
     devnull=open(os.devnull,"w")
@@ -574,9 +569,9 @@ if __name__ == '__main__':
             processes.append(
                 s.run_dhrystone_sim(args.use_qsub))
 
-        while len(processes) > 25:
+        while len(processes) >= args.max_jobs:
             processes = [ p for p in processes if p.poll() == None ]
-            if len(processes) > 25:
+            if len(processes) >= args.max_jobs:
                 time.sleep(5)
 
     for p in processes:

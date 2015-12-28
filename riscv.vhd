@@ -13,7 +13,7 @@ entity riscV is
     MULTIPLY_ENABLE      : natural range 0 to 1 := 0;
     DIVIDE_ENABLE        : natural range 0 to 1 := 0;
     SHIFTER_SINGLE_CYCLE : natural range 0 to 2 := 0;
-    INCLUDE_COUNTERS     : natural range 0 to 1 := 0;
+    COUNTER_LENGTH       : natural              := 0;
     BRANCH_PREDICTORS    : natural              := 0;
     PIPELINE_STAGES      : natural range 3 to 4 := 4;
     FORWARD_ALU_ONLY     : natural range 0 to 1 := 1);
@@ -178,8 +178,8 @@ begin  -- architecture rtl
       RESET_VECTOR         => RESET_VECTOR,
       MULTIPLY_ENABLE      => MULTIPLY_ENABLE = 1,
       DIVIDE_ENABLE        => DIVIDE_ENABLE = 1,
-      SHIFTER_SINGLE_CYCLE => SHIFTER_SINGLE_CYCLE ,
-      INCLUDE_COUNTERS     => INCLUDE_COUNTERS = 1,
+      SHIFTER_SINGLE_CYCLE => SHIFTER_SINGLE_CYCLE,
+      COUNTER_LENGTH       => COUNTER_LENGTH,
       FORWARD_ALU_ONLY     => FORWARD_ALU_ONLY = 1)
     port map (
       clk            => clk,

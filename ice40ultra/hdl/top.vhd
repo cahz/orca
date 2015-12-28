@@ -17,10 +17,6 @@ entity top is
     txd       : out   std_logic;
     cts       : in    std_logic;
     rts       : out   std_logic;
-    --uart_pmod : inout std_logic_vector(3 downto 0);
-    --pmodmic0
-    mic0_pmod : inout std_logic_vector(3 downto 0);
-    mic1_pmod : inout std_logic_vector(3 downto 0);
 
     R_LED  : out std_logic;
     G_LED  : out std_logic;
@@ -33,9 +29,8 @@ end entity;
 
 architecture rtl of top is
 
+  constant REGISTER_SIZE : integer :=32;
 
-
-  constant REGISTER_SIZE : natural := 32;
   constant RAM_SIZE      : natural := 8*1024;
 
   signal reset : std_logic;
@@ -103,20 +98,6 @@ architecture rtl of top is
   signal led_err_o   : std_logic;
   signal led_rty_o   : std_logic;
 
-  signal pmod_mic_adr_i   : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal pmod_mic_dat_i   : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal pmod_mic_dat_o   : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal pmod_mic_stb_i   : std_logic;
-  signal pmod_mic_cyc_i   : std_logic;
-  signal pmod_mic_we_i    : std_logic;
-  signal pmod_mic_sel_i   : std_logic_vector(3 downto 0);
-  signal pmod_mic_cti_i   : std_logic_vector(2 downto 0);
-  signal pmod_mic_bte_i   : std_logic_vector(1 downto 0);
-  signal pmod_mic_ack_o   : std_logic;
-  signal pmod_mic_stall_o : std_logic;
-  signal pmod_mic_lock_i  : std_logic;
-  signal pmod_mic_err_o   : std_logic;
-  signal pmod_mic_rty_o   : std_logic;
 
 
   signal data_uart_adr_i   : std_logic_vector(REGISTER_SIZE-1 downto 0);
@@ -200,21 +181,6 @@ architecture rtl of top is
   constant HEARTBEAT_COUNTER_BITS : positive                                    := log2(SYSCLK_FREQ_HZ);  -- ~1 second to roll over
   signal heartbeat_counter        : unsigned(HEARTBEAT_COUNTER_BITS-1 downto 0) := (others => '0');
 
-  constant MICS    : natural := 2;
-  signal mic_sdata : std_logic_vector(MICS-1 downto 0);
-  signal mic_sclk  : std_logic_vector(MICS-1 downto 0);
-  signal mic_cs_n  : std_logic_vector(MICS-1 downto 0);
-
-
-  alias mic0_cs_n  : std_logic is mic0_pmod(0);  --pmod(0)
-  alias mic0_nc    : std_logic is mic0_pmod(1);  --not connected
-  alias mic0_sdata : std_logic is mic0_pmod(2);  --pmod(2)
-  alias mic0_sclk  : std_logic is mic0_pmod(3);  --pmod(3)
-
-  alias mic1_cs_n  : std_logic is mic1_pmod(0);  --pmod(0)
-  alias mic1_nc    : std_logic is mic1_pmod(1);  --not connected
-  alias mic1_sdata : std_logic is mic1_pmod(2);  --pmod(2)
-  alias mic1_sclk  : std_logic is mic1_pmod(3);  --pmod(3)
 
   signal auto_reset_count : unsigned(3 downto 0):= (others => '0');
   signal auto_reset       : std_logic;
@@ -314,9 +280,10 @@ begin
 
   rv : component riscV_wishbone
     generic map (
+      REGISTER_SIZE => REGISTER_SIZE,
       MULTIPLY_ENABLE      => 0,
       SHIFTER_SINGLE_CYCLE => 0,
-      INCLUDE_COUNTERS     => 1)
+      COUNTER_LENGTH     => 32)
     port map(
 
       clk   => clk,
@@ -357,8 +324,8 @@ begin
     generic map(
       master0_address => (16#00000000#, RAM_SIZE),  --RAM
       master1_address => (16#00010000#, 4*1024),    --led
-      master2_address => (16#00020000#, 4*1024),    --uart
-      master3_address => (16#00030000#, 4*1024))    --pmod
+      master2_address => (16#00020000#, 4*1024))    --uart
+
     port map(
       clk_i => clk,
       rst_i => reset,
@@ -423,22 +390,7 @@ begin
       master2_DAT_I   => data_uart_DAT_O,
       master2_ACK_I   => data_uart_ACK_O,
       master2_ERR_I   => data_uart_ERR_O,
-      master2_RTY_I   => data_uart_RTY_O,
-
-      master3_ADR_O   => pmod_mic_ADR_I,
-      master3_DAT_O   => pmod_mic_DAT_I,
-      master3_WE_O    => pmod_mic_WE_I,
-      master3_CYC_O   => pmod_mic_CYC_I,
-      master3_STB_O   => pmod_mic_STB_I,
-      master3_SEL_O   => pmod_mic_SEL_I,
-      master3_CTI_O   => pmod_mic_CTI_I,
-      master3_BTE_O   => pmod_mic_BTE_I,
-      master3_LOCK_O  => pmod_mic_LOCK_I,
-      master3_STALL_I => pmod_mic_STALL_O,
-      master3_DAT_I   => pmod_mic_DAT_O,
-      master3_ACK_I   => pmod_mic_ACK_O,
-      master3_ERR_I   => pmod_mic_ERR_O,
-      master3_RTY_I   => pmod_mic_RTY_O);
+      master2_RTY_I   => data_uart_RTY_O);
 
 
   instr_stall_i <= uart_stall or mem_instr_stall;
@@ -465,45 +417,11 @@ begin
       RTY_O   => led_RTY_O,
       output  => led_pio_out);
 
-  pmod_mic : component pmod_mic_wb
-    generic map(
-      PORTS          => MICS,
-      CLK_FREQ_HZ    => SYSCLK_FREQ_HZ,
-      SAMPLE_RATE_HZ => 44100           --44.1kHz
-      )
-    port map(
-      clk           => clk,
-      reset         => reset,
-      sdata         => mic_sdata,
-      sclk          => mic_sclk,
-      cs_n          => mic_cs_n,
-      pmodmic_adr_i => pmod_mic_ADR_I(7 downto 0),
-      pmodmic_dat_i => pmod_mic_DAT_I(15 downto 0),
-      pmodmic_dat_o => pmod_mic_DAT_O(15 downto 0),
-      pmodmic_stb_i => pmod_mic_STB_I,
-      pmodmic_cyc_i => pmod_mic_CYC_I,
-      pmodmic_we_i  => pmod_mic_WE_I,
-      pmodmic_sel_i => pmod_mic_SEL_I,
-      pmodmic_cti_i => pmod_mic_CTI_I,
-      pmodmic_bte_i => pmod_mic_BTE_I,
-      pmodmic_ack_o => pmod_mic_ACK_O);
-  pmod_mic_STALL_O <= not pmod_mic_ACK_O;
-
-  mic0_pmod(0) <= mic_cs_n(0);
-  mic0_pmod(1) <= 'Z';
-  mic0_pmod(2) <= 'Z';
-  mic_sdata(0) <= mic0_pmod(2);
-  mic0_pmod(3) <= mic_sclk(0);
-
-  mic1_pmod(0) <= mic_cs_n(1);
-  mic1_pmod(1) <= 'Z';
-  mic1_pmod(2) <= 'Z';
-  mic_sdata(1) <= mic1_pmod(2);
-  mic1_pmod(3) <= mic_sclk(1);
-
 
 -----------------------------------------------------------------------------
 -- Debugging logic (PC over UART)
+-- This is useful if we can't figure out why
+-- the program isn't running.
 -----------------------------------------------------------------------------
   debug_gen : if DEBUG_ENABLE generate
     signal last_valid_address : std_logic_vector(31 downto 0);
@@ -618,7 +536,6 @@ begin
   -----------------------------------------------------------------------------
   -- UART signals and interface
   -----------------------------------------------------------------------------
-  --PmodUSBUART (0->RTS, 1->RXD, 2->TXD, 3->CTS)
   cts_n     <= cts;
   txd       <= serial_out;
   serial_in <= rxd;

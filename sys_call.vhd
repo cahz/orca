@@ -6,9 +6,9 @@ entity instruction_legal is
     INSTRUCTION_SIZE         : positive;
     CHECK_LEGAL_INSTRUCTIONS : boolean);
   port (
-    instruction       : in  std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
-    illegal_alu_instr : in  std_logic;
-    legal             : out std_logic);
+    instruction   : in  std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
+    other_illegal : in  std_logic;
+    legal         : out std_logic);
 end entity;
 
 architecture rtl of instruction_legal is
@@ -17,18 +17,18 @@ architecture rtl of instruction_legal is
 begin
 
   legal <=
-    '1' when (CHECK_LEGAL_INSTRUCTIONS = false or
-              opcode7 = "0110111" or
-              opcode7 = "0010111" or
-              opcode7 = "1101111" or
-              (opcode7 = "1100111" and func3 = "000") or
-              (opcode7 = "1100011" and func3 /= "010" and func3 /= "011") or
-              (opcode7 = "0000011" and func3 /= "011" and func3 /= "110" and func3 /= "111") or
-              (opcode7 = "0100011" and (func3 = "000" or func3 = "001" or func3 = "010")) or
-              opcode7 = "0010011" or
-              (opcode7 = "0110011" and not illegal_alu_instr = '1') or
-              (opcode7 = "0001111" and instruction(31 downto 28)& instruction(19 downto 13) &instruction(11 downto 7) = x"0000") or
-              opcode7 = "1110011") else '0';
+    not other_illegal when (CHECK_LEGAL_INSTRUCTIONS = false or
+                            opcode7 = "0110111" or
+                            opcode7 = "0010111" or
+                            opcode7 = "1101111" or
+                            (opcode7 = "1100111" and func3 = "000") or
+                            (opcode7 = "1100011" and func3 /= "010" and func3 /= "011") or
+                            (opcode7 = "0000011" and func3 /= "011" and func3 /= "110" and func3 /= "111") or
+                            (opcode7 = "0100011" and (func3 = "000" or func3 = "001" or func3 = "010")) or
+                            opcode7 = "0010011" or
+                            opcode7 = "0110011" or
+                            (opcode7 = "0001111" and instruction(31 downto 28)& instruction(19 downto 13) &instruction(11 downto 7) = x"0000") or
+                            opcode7 = "1110011") else '0';
 
 end architecture;
 
@@ -42,7 +42,7 @@ entity system_calls is
     REGISTER_SIZE    : natural;
     INSTRUCTION_SIZE : natural;
     RESET_VECTOR     : natural;
-    INCLUDE_COUNTERS : boolean);
+    COUNTER_LENGTH   : natural);
 
   port (
     clk         : in std_logic;
@@ -87,8 +87,6 @@ architecture rtl of system_calls is
   signal instr_retired : unsigned(63 downto 0);
 
   --if INCLUDE_EXTRA_COUNTERS is enabled, then
-  --INCLUDE_TIMERS must be enabled
-  constant INCLUDE_TIMERS         : boolean := INCLUDE_COUNTERS;
   constant INCLUDE_EXTRA_COUNTERS : boolean := false;
 
   constant CHECK_LEGAL_INSTRUCTIONS : boolean := true;
@@ -105,6 +103,12 @@ architecture rtl of system_calls is
   signal mtimeh     : std_logic_vector(REGISTER_SIZE-1 downto 0);
   signal instret    : std_logic_vector(REGISTER_SIZE-1 downto 0);
   signal instreth   : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal mip        : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal mie        : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal mip_msip   : std_logic;
+  signal mip_mtip   : std_logic;
+  signal mie_msie   : std_logic;
+  signal mie_mtie   : std_logic;
 
   signal mepc      : std_logic_vector(REGISTER_SIZE-1 downto 0);
   signal mcause    : std_logic_vector(REGISTER_SIZE-1 downto 0);
@@ -172,48 +176,50 @@ architecture rtl of system_calls is
   constant CSRRCI : std_logic_vector(2 downto 0) := "111";
 
 
+
 --internal signals
   signal csr_read_val  : std_logic_vector(REGISTER_SIZE -1 downto 0);
   signal csr_write_val : std_logic_vector(REGISTER_SIZE -1 downto 0);
   signal bit_sel       : std_logic_vector(REGISTER_SIZE-1 downto 0);
   signal ibit_sel      : std_logic_vector(REGISTER_SIZE-1 downto 0);
   signal resized_zimm  : std_logic_vector(REGISTER_SIZE-1 downto 0);
-
+  signal bad_csr_num   : std_logic;
+  signal csr_read_en   : std_logic;
+  signal other_illegal : std_logic;
   component instruction_legal is
     generic (
       INSTRUCTION_SIZE         : positive;
       CHECK_LEGAL_INSTRUCTIONS : boolean);
     port (
-      instruction       : in  std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
-      illegal_alu_instr : in  std_logic;
-      legal             : out std_logic);
+      instruction   : in  std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
+      other_illegal : in  std_logic;
+      legal         : out std_logic);
   end component;
 
 
 begin  -- architecture rtl
-  timers_if_gen : if INCLUDE_TIMERS generate
-    counter_increment : process (clk, reset) is
-    begin  -- process
-      if reset = '1' then
-        cycles        <= (others => '0');
-        instr_retired <= (others => '0');
+  counter_increment : process (clk, reset) is
+  begin  -- process
+    if reset = '1' then
+      cycles        <= (others => '0');
+      instr_retired <= (others => '0');
 
-      elsif rising_edge(clk) then
-        cycles <= cycles +1;
-        if finished_instr = '1' then
-          instr_retired <= instr_retired +1;
-        end if;
+    elsif rising_edge(clk) then
+      cycles <= cycles +1;
+      if finished_instr = '1' then
+        instr_retired <= instr_retired +1;
       end if;
-    end process;
-  end generate timers_if_gen;
+    end if;
+  end process;
+
+  assert COUNTER_LENGTH = 0 or COUNTER_LENGTH = 32 or COUNTER_LENGTH = 64 report "INVALID COUNTER_LENGTH" severity failure;
+
   EXTRA_COUNTERS_GEN : if INCLUDE_EXTRA_COUNTERS generate
     signal saved_opcode : std_logic_vector(4 downto 0);
   begin
     extra_counter_incr : process(clk)
     begin
       if reset = '1' then
-        cycles        <= (others => '0');
-        instr_retired <= (others => '0');
 
         use_after_load_stalls <= (others => '0');
         jal_instructions      <= (others => '0');
@@ -224,10 +230,6 @@ begin  -- architecture rtl
 
       elsif rising_edge(clk) then
         saved_opcode <= opcode;
-        cycles       <= cycles +1;
-        if finished_instr = '1' then
-          instr_retired <= instr_retired +1;
-        end if;
         if predict_corr = '1' then
           if saved_opcode = "11011" then
             jal_instructions <= jal_instructions + 1;
@@ -257,10 +259,8 @@ begin  -- architecture rtl
   mcause(mcause'left)            <= mcause_i;
   mcause(mcause'left-1 downto 4) <= (others => '0');
   mcause(3 downto 0)             <= mcause_ex;
-
-  instret  <= std_logic_vector(instr_retired(REGISTER_SIZE-1 downto 0));
-  instreth <= std_logic_vector(instr_retired(63 downto 64-REGISTER_SIZE));
-
+  instret                        <= std_logic_vector(instr_retired(REGISTER_SIZE-1 downto 0));
+  instreth                       <= std_logic_vector(instr_retired(63 downto 64-REGISTER_SIZE));
   -----------------------------------------------------------------------------
   -- different muxes based on different configurations
   -- Extra counters
@@ -275,11 +275,13 @@ begin  -- architecture rtl
       mtimeh                                  when CSR_CYCLEH,
       mtimeh                                  when CSR_TIMEH,
       mstatus                                 when CSR_MSTATUS,
---      mtvec                                   when CSR_MTVEC,
+      mtvec                                   when CSR_MTVEC,
       mepc                                    when CSR_MEPC,
       mcause                                  when CSR_MCAUSE,
       instret                                 when CSR_INSTRET,
       instreth                                when CSR_INSTRETH,
+      mie                                     when CSR_MIE,
+      mip                                     when CSR_MIP,
       std_logic_vector(jal_instructions)      when CSR_MBASE,
       std_logic_vector(jalr_instructions)     when CSR_MBOUND,
       std_logic_vector(branch_mispredicts)    when CSR_MIBASE,
@@ -289,31 +291,52 @@ begin  -- architecture rtl
       (others => '0')                         when others;
 
   end generate read_mux_extra;
-  read_mux_timers : if INCLUDE_TIMERS generate
-    with csr select
-      csr_read_val <=
-      mtime           when CSR_TIME,
-      mtime           when CSR_CYCLE,
-      mtimeh          when CSR_TIMEH,
-      mtimeh          when CSR_CYCLEH,
-      instret         when CSR_INSTRET,
-      instreth        when CSR_INSTRETH,
-      mstatus         when CSR_MSTATUS,
---      mtvec           when CSR_MTVEC,
-      mepc            when CSR_MEPC,
-      mcause          when CSR_MCAUSE,
-      (others => '0') when others;
-  end generate read_mux_timers;
+  nread_mux_extra : if not INCLUDE_EXTRA_COUNTERS generate
+    count64_gen : if COUNTER_LENGTH = 64 generate
+      with csr select
+        csr_read_val <=
+        mtime           when CSR_TIME,
+        mtime           when CSR_CYCLE,
+        mtimeh          when CSR_TIMEH,
+        mtimeh          when CSR_CYCLEH,
+        instret         when CSR_INSTRET,
+        instreth        when CSR_INSTRETH,
+        mstatus         when CSR_MSTATUS,
+        mtvec           when CSR_MTVEC,
+        mepc            when CSR_MEPC,
+        mcause          when CSR_MCAUSE,
+        (others => '0') when others;
+      bad_csr_num <= '0';
+    end generate;
 
-  read_mux_notimer : if not INCLUDE_TIMERS and not INCLUDE_EXTRA_COUNTERS generate
-    with csr select
-      csr_read_val <=
-      mstatus         when CSR_MSTATUS,
---      mtvec           when CSR_MTVEC,
-      mepc            when CSR_MEPC,
-      mcause          when CSR_MCAUSE,
-      (others => '0') when others;
-  end generate read_mux_notimer;
+    count32_gen : if COUNTER_LENGTH = 32 generate
+      with csr select
+        csr_read_val <=
+        mtime   when CSR_TIME,
+        mtime   when CSR_CYCLE,
+        mstatus when CSR_MSTATUS,
+        mtvec   when CSR_MTVEC,
+        mepc    when CSR_MEPC,
+        mcause  when CSR_MCAUSE,
+
+        (others => '0') when others;
+      bad_csr_num <= csr_read_en when csr = CSR_TIMEH or
+                     csr = CSR_CYCLEH else '0';
+    end generate;
+
+    count0_gen : if COUNTER_LENGTH = 0 generate
+      with csr select
+        csr_read_val <=
+        mstatus when CSR_MSTATUS,
+        mtvec   when CSR_MTVEC,
+        mepc    when CSR_MEPC,
+        mcause  when CSR_MCAUSE,
+
+        (others => '0') when others;
+      bad_csr_num <= '0';
+    end generate;
+
+  end generate;
 
 
   bit_sel                                      <= rs1_data;
@@ -333,7 +356,7 @@ begin  -- architecture rtl
     csr_read_val and not ibit_sel when CSRRCI,
     (others => 'X')               when others;
 
-
+  csr_read_en <= '1' when func3 /= "000" and func3 /= "100" and opcode = "11100" else '0';
 
   output_proc : process(clk) is
   begin
@@ -350,11 +373,8 @@ begin  -- architecture rtl
           pc_correction <= MACHINE_MODE_TRAP;
           mepc          <= current_pc;
 
-        elsif opcode = "11100" then     --SYSTEM OP CODE
-          if func3 /= "000" and func3 /= "100" then
-            wb_en <= '1';
-          end if;
-
+        elsif opcode = "11100" then        --SYSTEM OP CODE
+          wb_en <= csr_read_en;
           if zimm & func3 = "00000"&"000" then
             if CSR = x"000" then           --ECALL
               mcause_i      <= '0';
@@ -375,7 +395,6 @@ begin  -- architecture rtl
           else
                                            --writeback to CSR
             case CSR is
-                                           --read-write registers
               when CSR_MTOHOST =>
                 mtohost <= csr_write_val;  --write only register
               when CSR_MEPC =>
@@ -402,13 +421,13 @@ begin  -- architecture rtl
   to_host <= mtohost;
 
 
-
+  other_illegal <= illegal_alu_instr when opcode = "01100" or opcode = "00100"else bad_csr_num;
   li : component instruction_legal
     generic map(INSTRUCTION_SIZE         => INSTRUCTION_SIZE,
                 CHECK_LEGAL_INSTRUCTIONS => CHECK_LEGAL_INSTRUCTIONS)
-    port map(instruction       => instruction,
-             illegal_alu_instr => illegal_alu_instr,
-             legal             => legal_instruction);
+    port map(instruction   => instruction,
+             other_illegal => other_illegal,
+             legal         => legal_instruction);
 
 
 end architecture rtl;

@@ -465,7 +465,7 @@ architecture rtl of arithmetic_unit is
 
   signal mult_dest : signed((REGISTER_SIZE+1)*2-1 downto 0);
   signal mul_en    : std_logic;
-  signal mul_done  : std_logic;
+
   signal mul_stall : std_logic;
 
   signal div_op1    : unsigned(REGISTER_SIZE-1 downto 0);
@@ -690,6 +690,7 @@ begin  -- architecture rtl
     signal mul_a           : signed(mult_srca'range);
     signal mul_b           : signed(mult_srcb'range);
     signal mul_d           : signed(mult_dest'range);
+    signal mul_done  : std_logic;
     signal mul_almost_done0 : std_logic;
     signal mul_almost_done1 : std_logic;
   begin
@@ -746,10 +747,9 @@ begin  -- architecture rtl
                          (sh_stall = '1' and not SHIFTER_USE_MULTIPLIER))
                else '0';
 
-  illegal_alu_instr <= '0' when (instruction(31 downto 25) = "0000000" or
-                                 (instruction(31 downto 25) = "0100000" and (instruction(14 downto 12) = "101" or
-                                                                             instruction(14 downto 12) = "000"))or
-                                 (instruction(31 downto 25) = "0000001" and MULTIPLY_ENABLE and (instruction(14) = '0' or DIVIDE_ENABLE)))
-
+  illegal_alu_instr <= '0' when (instruction(31 downto 25 ) = "0000000" or
+                                 (instruction(31 downto 25 ) = "0100000" and (instruction(14 downto 12) = "000" or
+                                                                              instruction(14 downto 12) = "101")) or
+                                 (instruction(31 downto 25 ) = "0000001" and MULTIPLY_ENABLE and (instruction(14) = '0' or DIVIDE_ENABLE)))or                                 opcode /= OP
                        else '1';
 end architecture;

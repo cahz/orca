@@ -21,7 +21,7 @@ entity execute is
     MULTIPLY_ENABLE      : boolean;
     DIVIDE_ENABLE        : boolean;
     SHIFTER_SINGLE_CYCLE : natural range 0 to 2;
-    INCLUDE_COUNTERS     : boolean;
+    COUNTER_LENGTH       : natural;
     FORWARD_ALU_ONLY     : boolean);
   port(
     clk         : in std_logic;
@@ -353,7 +353,7 @@ begin
       REGISTER_SIZE    => REGISTER_SIZE,
       INSTRUCTION_SIZE => INSTRUCTION_SIZE,
       RESET_VECTOR     => RESET_VECTOR,
-      INCLUDE_COUNTERS => INCLUDE_COUNTERS)
+      COUNTER_LENGTH   => COUNTER_LENGTH)
     port map (
       clk            => clk,
       reset          => reset,

@@ -134,15 +134,15 @@ selected then only the alu \(OP,OP-IMM,LUI,AUIPC\) are forwarded to \
 the next cycle."
 set_display_item_property FORWARD_ALU_ONLY DISPLAY_HINT boolean
 
-add_parameter INCLUDE_COUNTERS natural 1
-set_parameter_property INCLUDE_COUNTERS DEFAULT_VALUE 1
-set_parameter_property INCLUDE_COUNTERS DISPLAY_NAME "INCLUDE COUNTERS"
-set_parameter_property INCLUDE_COUNTERS DESCRIPTION "Add rdcycle and rdinstret instructions. It costs about 200 LUT4s"
-set_parameter_property INCLUDE_COUNTERS TYPE NATURAL
-set_parameter_property INCLUDE_COUNTERS UNITS None
-set_parameter_property INCLUDE_COUNTERS ALLOWED_RANGES 0:1
-set_parameter_property INCLUDE_COUNTERS HDL_PARAMETER true
-set_display_item_property INCLUDE_COUNTERS DISPLAY_HINT boolean
+add_parameter COUNTER_LENGTH natural 1
+set_parameter_property COUNTER_LENGTH DEFAULT_VALUE 1
+set_parameter_property COUNTER_LENGTH DISPLAY_NAME "INCLUDE COUNTERS"
+set_parameter_property COUNTER_LENGTH DESCRIPTION "Add rdcycle and rdinstret instructions. It costs about 200 LUT4s"
+set_parameter_property COUNTER_LENGTH TYPE NATURAL
+set_parameter_property COUNTER_LENGTH UNITS None
+set_parameter_property COUNTER_LENGTH ALLOWED_RANGES {0 32 64}
+set_parameter_property COUNTER_LENGTH HDL_PARAMETER true
+set_display_item_property COUNTER_LENGTH DISPLAY_HINT boolean
 
 add_parameter          BRANCH_PREDICTORS natural 0
 set_parameter_property BRANCH_PREDICTORS DEFAULT_VALUE 1

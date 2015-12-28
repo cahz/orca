@@ -30,8 +30,8 @@ endif
 ifdef DIVIDE_ENABLE
 	sed -i 's|parameter name="DIVIDE_ENABLE" value=".*" />|parameter name="DIVIDE_ENABLE" value=$(DIVIDE_ENABLE) />|' $(QSYS_FILE)
 endif
-ifdef INCLUDE_COUNTERS
-	sed -i 's|parameter name="INCLUDE_COUNTERS" value=".*" />|parameter name="INCLUDE_COUNTERS" value=$(INCLUDE_COUNTERS) />|' $(QSYS_FILE)
+ifdef COUNTER_LENGTH
+	sed -i 's|parameter name="COUNTER_LENGTH" value=".*" />|parameter name="COUNTER_LENGTH" value=$(COUNTER_LENGTH) />|' $(QSYS_FILE)
 endif
 ifdef MULTIPLY_ENABLE
 	sed -i 's|parameter name="MULTIPLY_ENABLE" value=".*" />|parameter name="MULTIPLY_ENABLE" value=$(MULTIPLY_ENABLE) />|' $(QSYS_FILE)

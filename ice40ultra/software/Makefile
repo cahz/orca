@@ -48,6 +48,6 @@ endif
 all: $(TARGET).$(FORMAT)
 
 clean:
-	rm -rf obj test.elf test.dump test.bin test.hex test.mif
+	rm -rf obj test.elf test.dump test.bin test.hex test.mif test.mem
 
 -include $(wildcard obj/*.d)
