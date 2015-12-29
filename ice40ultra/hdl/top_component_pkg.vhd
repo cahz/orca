@@ -78,6 +78,7 @@ package top_component_pkg is
       SHIFTER_SINGLE_CYCLE : natural range 0 to 2 := 0;
       COUNTER_LENGTH       : natural              := 64;
       BRANCH_PREDICTORS    : natural              := 0;
+      PIPELINE_STAGES      : natural range 4 to 5 := 5;
       FORWARD_ALU_ONLY     : natural range 0 to 1 := 1);
     port(
       clk   : in std_logic;

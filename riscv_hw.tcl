@@ -166,7 +166,7 @@ set_parameter_property PIPELINE_STAGES HDL_PARAMETER true
 set_parameter_property PIPELINE_STAGES DISPLAY_NAME "PIPELINE STAGES"
 set_parameter_property PIPELINE_STAGES DESCRIPTION "Choose the number of pipeline stages, 3 stages is smaller\
 but 4 stages has a higher fmax"
-set_parameter_property PIPELINE_STAGES ALLOWED_RANGES {3,4}
+set_parameter_property PIPELINE_STAGES ALLOWED_RANGES {4,5}
 
 
 

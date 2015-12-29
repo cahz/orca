@@ -15,7 +15,7 @@ entity riscV is
     SHIFTER_SINGLE_CYCLE : natural range 0 to 2 := 0;
     COUNTER_LENGTH       : natural              := 0;
     BRANCH_PREDICTORS    : natural              := 0;
-    PIPELINE_STAGES      : natural range 3 to 4 := 4;
+    PIPELINE_STAGES      : natural range 4 to 5 := 5;
     FORWARD_ALU_ONLY     : natural range 0 to 1 := 1);
 
   port(clk   : in std_logic;
@@ -143,7 +143,7 @@ begin  -- architecture rtl
       REGISTER_NAME_SIZE  => REGISTER_NAME_SIZE,
       INSTRUCTION_SIZE    => INSTRUCTION_SIZE,
       SIGN_EXTENSION_SIZE => SIGN_EXTENSION_SIZE,
-      PIPELINE_STAGES     => PIPELINE_STAGES-2)
+      PIPELINE_STAGES     => PIPELINE_STAGES-3)
     port map(
       clk            => clk,
       reset          => reset,

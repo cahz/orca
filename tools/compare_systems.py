@@ -292,7 +292,7 @@ check_boxes_html="""
 <input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="count0"> count0		</input>
 <input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="count32">count32		</input>
 <input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="count64">count64		</input>
-<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="pipe3">     pipe3			</input>
+<input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="pipe4">     pipe4			</input>
 <input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="ssc0">      ssc0				</input>
 <input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="ssc1">      ssc1				</input>
 <input class="red-selector" type="checkbox"  onchange="toggle_checkbox(this)" name="ssc2">      ssc2				</input>
@@ -522,7 +522,7 @@ else:
                         for ssc in ["0","1","2"]:
                             if mul == '1' and ssc != '0':
                                 continue;
-                            for ps in ["3","4"]:
+                            for ps in ["4","5"]:
                                 SYSTEMS.append(system(branch_prediction=bp,
                                                       btb_size=btb_size,
                                                       divide_enable=div,

@@ -14,6 +14,7 @@ entity riscV_wishbone is
     SHIFTER_SINGLE_CYCLE : natural range 0 to 2 := 0;
     COUNTER_LENGTH       : natural              := 64;
     BRANCH_PREDICTORS    : natural              := 0;
+    PIPELINE_STAGES      : natural range 4 to 5 := 5;
     FORWARD_ALU_ONLY     : natural range 0 to 1 := 1);
 
   port(clk   : in std_logic;
@@ -108,6 +109,7 @@ begin  -- architecture rtl
       SHIFTER_SINGLE_CYCLE => SHIFTER_SINGLE_CYCLE,
       COUNTER_LENGTH       => COUNTER_LENGTH,
       BRANCH_PREDICTORS    => BRANCH_PREDICTORS,
+      PIPELINE_STAGES      => PIPELINE_STAGES,
       FORWARD_ALU_ONLY     => FORWARD_ALU_ONLY)
     port map(
       clk   => clk,
