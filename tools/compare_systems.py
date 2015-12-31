@@ -95,7 +95,7 @@ class system:
             f.write('DIVIDE_ENABLE="%s"\n'       %self.divide_enable)
             f.write('COUNTER_LENGTH="%s"\n'    %self.counter_length)
             f.write('PIPELINE_STAGES="%s"\n'     %self.pipeline_stages)
-            f.write('SHIFTER_SINGLE_CYCLE="%s"\n'%self.shifter_single_cycle)
+            f.write('SHIFTER_MAX_CYCLES="%s"\n'%self.shifter_single_cycle)
             f.write('FORWARD_ALU_ONLY="%s"\n'    %self.fwd_alu_only)
     def build(self,use_qsub=False,build_target="all"):
         make_cmd='make -C %s %s'%(self.directory,build_target)
@@ -141,15 +141,17 @@ class system:
             replace('DIVIDE_ENABLE',self.divide_enable)
             replace('COUNTER_LENGTH',"64" if self.counter_length == "0" else self.counter_length)
             replace('PIPELINE_STAGES',self.pipeline_stages)
-            replace('SHIFTER_SINGLE_CYCLE',self.shifter_single_cycle)
+            replace('SHIFTER_MAX_CYCLES',self.shifter_single_cycle)
             replace('FORWARD_ALU_ONLY',self.fwd_alu_only)
             vsim_tcl=("do ../tools/runsim.tcl",
                       "add wave /vblox1/hex_0_external_connection_export",
                       "restart -f",
                       "onbreak {resume}",
                       "when {/vblox1/hex_0_external_connection_export /= x\"00000000\" } {stop}",
-                      "run 200 us",
+                      "puts [exec hostname ]",
+                      "run 10 us",
                       "puts \" User Time = [examine -decimal /vblox1/hex_0_external_connection_export ] \"",
+                      "puts \"Now = $now\"",
                       "exit -f")
             with open("dhrystone.tcl","w") as f:
                 f.write("\n".join(vsim_tcl))
@@ -201,7 +203,7 @@ class system:
             f.write('DIVIDE_ENABLE="%s"\n'       %self.divide_enable)
             f.write('COUNTER_LENGTH="%s"\n'    %self.multiply_enable)
             f.write('MULTIPLY_ENABLE="%s"\n'     %self.counter_length)
-            f.write('SHIFTER_SINGLE_CYCLE="%s"\n'%self.shifter_single_cycle)
+            f.write('SHIFTER_MAX_CYCLES="%s"\n'%self.shifter_single_cycle)
             f.write("FORWARD_ALU_ONLY=%s\n"      %self.fwd_alu_only)
             f.write( "fmax=%f\n"                 %self.fmax)
             f.write( "cpu_prefit_size=%d\n"      %self.cpu_prefit_size)
@@ -367,7 +369,7 @@ def summarize_stats(systems):
 
         html.write("<thead><tr>")
         for th in ('','','branch prediction','btb size','multiply','divide',
-                   'perfomance counters','pipeline stages','single cycle shift',
+                   'perfomance counters','pipeline stages','single max cycles',
                    'fwd alu only','prefit size','postfit size','FMAX','DMIPS','DMIPS/MHz','DMIPS/1000LUT (post-fit)'):
             html.write('<th>%s</th>'%th)
         html.write("</tr></thead><tbody>\n")
@@ -519,8 +521,8 @@ else:
                     if div == "1" and mul == '0':
                         continue;
                     for ic in ["0","32","64"]:
-                        for ssc in ["0","1","2"]:
-                            if mul == '1' and ssc != '0':
+                        for ssc in ["1","8","32"]:
+                            if mul == '1' and ssc != '1':
                                 continue;
                             for ps in ["4","5"]:
                                 SYSTEMS.append(system(branch_prediction=bp,

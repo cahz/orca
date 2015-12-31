@@ -107,19 +107,12 @@ set_parameter_property DIVIDE_ENABLE ALLOWED_RANGES 0:1
 set_parameter_property DIVIDE_ENABLE HDL_PARAMETER true
 set_display_item_property DIVIDE_ENABLE DISPLAY_HINT boolean
 
-add_parameter SHIFTER_SINGLE_CYCLE natural 0
-set_parameter_property SHIFTER_SINGLE_CYCLE DEFAULT_VALUE 0
-set_parameter_property SHIFTER_SINGLE_CYCLE DISPLAY_NAME "SINGLE CYLCE SHIFTER"
-set_parameter_property SHIFTER_SINGLE_CYCLE DESCRIPTION "\
-Single cycle shifter, uses about 100 LUT4s.\
-If not set, a n bit shift will take n+2 cycles. \
-This setting is overridden by enabling Hardware Multiply. \
-If Hardware Multiply is enabled then the shift instruction \
-uses the multiplier \(2 cycles\)."
-set_parameter_property SHIFTER_SINGLE_CYCLE TYPE NATURAL
-set_parameter_property SHIFTER_SINGLE_CYCLE UNITS Cycles
-set_parameter_property SHIFTER_SINGLE_CYCLE ALLOWED_RANGES {0:One 1:ThirtyTwo 2:Eight}
-set_parameter_property SHIFTER_SINGLE_CYCLE HDL_PARAMETER true
+add_parameter SHIFTER_MAX_CYCLES natural 32
+set_parameter_property SHIFTER_MAX_CYCLES DISPLAY_NAME "SHIFTER MAX CYCLES"
+set_parameter_property SHIFTER_MAX_CYCLES TYPE NATURAL
+set_parameter_property SHIFTER_MAX_CYCLES UNITS Cycles
+set_parameter_property SHIFTER_MAX_CYCLES ALLOWED_RANGES {1 8 32}
+set_parameter_property SHIFTER_MAX_CYCLES HDL_PARAMETER true
 
 
 add_parameter          FORWARD_ALU_ONLY natural 1
@@ -334,9 +327,9 @@ proc log_out {out_str} {
 
 proc elaboration_callback {} {
 	 if { [get_parameter_value MULTIPLY_ENABLE] } {
-		  set_display_item_property SHIFTER_SINGLE_CYCLE ENABLED false
+		  set_display_item_property SHIFTER_MAX_CYCLES ENABLED false
 	 } else {
-		  set_display_item_property SHIFTER_SINGLE_CYCLE ENABLED true
+		  set_display_item_property SHIFTER_MAX_CYCLES ENABLED true
 	 }
 	 set table_size 0
 	 if { [get_parameter_value BRANCH_PREDICTION] } {

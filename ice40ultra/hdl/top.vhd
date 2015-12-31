@@ -280,10 +280,11 @@ begin
 
   rv : component riscV_wishbone
     generic map (
-      REGISTER_SIZE => REGISTER_SIZE,
-      MULTIPLY_ENABLE      => 0,
-      SHIFTER_SINGLE_CYCLE => 0,
-      COUNTER_LENGTH     => 32)
+      REGISTER_SIZE      => REGISTER_SIZE,
+      MULTIPLY_ENABLE    => 0,
+      SHIFTER_MAX_CYCLES => 32,
+      COUNTER_LENGTH     => 0,
+      PIPELINE_STAGES    => 4)
     port map(
 
       clk   => clk,

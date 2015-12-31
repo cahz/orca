@@ -452,7 +452,7 @@
   <parameter name="PIPELINE_STAGES" value="4" />
   <parameter name="REGISTER_SIZE" value="32" />
   <parameter name="RESET_VECTOR" value="512" />
-  <parameter name="SHIFTER_SINGLE_CYCLE" value="0" />
+  <parameter name="SHIFTER_MAX_CYCLES" value="1" />
  </module>
  <module name="tohost_pio" kind="altera_avalon_pio" version="15.0" enabled="1">
   <parameter name="bitClearingEdgeCapReg" value="false" />

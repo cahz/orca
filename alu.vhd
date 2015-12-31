@@ -9,7 +9,7 @@ entity shifter is
 
   generic (
     REGISTER_SIZE : natural;
-    SINGLE_CYCLE  : natural range 0 to 2
+    SINGLE_CYCLE  : natural
     );
   port(
     clk           : in  std_logic;
@@ -27,13 +27,15 @@ architecture rtl of shifter is
   signal left_tmp         : signed(REGISTER_SIZE downto 0);
   signal right_tmp        : signed(REGISTER_SIZE downto 0);
 begin  -- architecture rtl
-  cycle1 : if SINGLE_CYCLE = 0 generate
+  assert SINGLE_CYCLE = 1 or SINGLE_CYCLE = 8 or SINGLE_CYCLE = 32 report "Bad SHIFTER_MAX_CYCLES Value" severity failure;
+
+  cycle1 : if SINGLE_CYCLE = 1 generate
     left_tmp  <= SHIFT_LEFT(shifted_value, to_integer(shift_amt));
     right_tmp <= SHIFT_RIGHT(shifted_value, to_integer(shift_amt));
     done      <= '1';
   end generate cycle1;
 
-  cycle4N : if SINGLE_CYCLE = 2 generate
+  cycle4N : if SINGLE_CYCLE = 8 generate
 
     signal left_nxt   : signed(REGISTER_SIZE downto 0);
     signal right_nxt  : signed(REGISTER_SIZE downto 0);
@@ -69,7 +71,7 @@ begin  -- architecture rtl
               end if;
             end if;
           when running =>
-            assert enable = '1' report "enable went low during shift" severity error;
+            assert enable = '1' report "enable went low during shift" severity failure;
             left_tmp  <= left_nxt;
             right_tmp <= right_nxt;
             count     <= count_next;
@@ -86,7 +88,7 @@ begin  -- architecture rtl
 
   end generate cycle4N;
 
-  cycle1N : if SINGLE_CYCLE = 1 generate
+  cycle1N : if SINGLE_CYCLE = 32 generate
 
     signal left_nxt  : signed(REGISTER_SIZE downto 0);
     signal right_nxt : signed(REGISTER_SIZE downto 0);
@@ -385,7 +387,7 @@ entity arithmetic_unit is
     SIGN_EXTENSION_SIZE  : integer;
     MULTIPLY_ENABLE      : boolean;
     DIVIDE_ENABLE        : boolean;
-    SHIFTER_SINGLE_CYCLE : natural range 0 to 2);
+    SHIFTER_MAX_CYCLES : natural );
 
   port (
     clk               : in  std_logic;
@@ -408,7 +410,7 @@ end entity arithmetic_unit;
 architecture rtl of arithmetic_unit is
 
   constant SHIFTER_USE_MULTIPLIER : boolean := MULTIPLY_ENABLE;
-  constant SHIFT_SC               : natural := conditional(SHIFTER_USE_MULTIPLIER, 0, SHIFTER_SINGLE_CYCLE);
+  constant SHIFT_SC               : natural := conditional(SHIFTER_USE_MULTIPLIER, 0, SHIFTER_MAX_CYCLES);
 
   --op codes
   constant OP     : std_logic_vector(6 downto 0) := "0110011";

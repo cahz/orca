@@ -71,15 +71,15 @@ package top_component_pkg is
 
   component riscV_wishbone is
     generic (
-      REGISTER_SIZE        : integer              := 32;
-      RESET_VECTOR         : natural              := 16#00000200#;
-      MULTIPLY_ENABLE      : natural range 0 to 1 := 0;
-      DIVIDE_ENABLE        : natural range 0 to 1 := 0;
-      SHIFTER_SINGLE_CYCLE : natural range 0 to 2 := 0;
-      COUNTER_LENGTH       : natural              := 64;
-      BRANCH_PREDICTORS    : natural              := 0;
-      PIPELINE_STAGES      : natural range 4 to 5 := 5;
-      FORWARD_ALU_ONLY     : natural range 0 to 1 := 1);
+      REGISTER_SIZE      : integer              := 32;
+      RESET_VECTOR       : natural              := 16#00000200#;
+      MULTIPLY_ENABLE    : natural range 0 to 1 := 0;
+      DIVIDE_ENABLE      : natural range 0 to 1 := 0;
+      SHIFTER_MAX_CYCLES : natural              := 8;
+      COUNTER_LENGTH     : natural              := 64;
+      BRANCH_PREDICTORS  : natural              := 0;
+      PIPELINE_STAGES    : natural range 4 to 5 := 5;
+      FORWARD_ALU_ONLY   : natural range 0 to 1 := 1);
     port(
       clk   : in std_logic;
       reset : in std_logic;

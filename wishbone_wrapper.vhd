@@ -7,15 +7,15 @@ use work.rv_components.all;
 entity riscV_wishbone is
 
   generic (
-    REGISTER_SIZE        : integer              := 32;
-    RESET_VECTOR         : natural              := 16#00000200#;
-    MULTIPLY_ENABLE      : natural range 0 to 1 := 0;
-    DIVIDE_ENABLE        : natural range 0 to 1 := 0;
-    SHIFTER_SINGLE_CYCLE : natural range 0 to 2 := 0;
-    COUNTER_LENGTH       : natural              := 64;
-    BRANCH_PREDICTORS    : natural              := 0;
-    PIPELINE_STAGES      : natural range 4 to 5 := 5;
-    FORWARD_ALU_ONLY     : natural range 0 to 1 := 1);
+    REGISTER_SIZE      : integer              := 32;
+    RESET_VECTOR       : natural              := 16#00000200#;
+    MULTIPLY_ENABLE    : natural range 0 to 1 := 0;
+    DIVIDE_ENABLE      : natural range 0 to 1 := 0;
+    SHIFTER_MAX_CYCLES : natural              := 1;
+    COUNTER_LENGTH     : natural              := 64;
+    BRANCH_PREDICTORS  : natural              := 0;
+    PIPELINE_STAGES    : natural range 4 to 5 := 5;
+    FORWARD_ALU_ONLY   : natural range 0 to 1 := 1);
 
   port(clk   : in std_logic;
        reset : in std_logic;
@@ -102,15 +102,15 @@ begin  -- architecture rtl
 
   rv : component riscV
     generic map (
-      REGISTER_SIZE        => REGISTER_SIZE,
-      RESET_VECTOR         => RESET_VECTOR,
-      MULTIPLY_ENABLE      => MULTIPLY_ENABLE,
-      DIVIDE_ENABLE        => DIVIDE_ENABLE,
-      SHIFTER_SINGLE_CYCLE => SHIFTER_SINGLE_CYCLE,
-      COUNTER_LENGTH       => COUNTER_LENGTH,
-      BRANCH_PREDICTORS    => BRANCH_PREDICTORS,
-      PIPELINE_STAGES      => PIPELINE_STAGES,
-      FORWARD_ALU_ONLY     => FORWARD_ALU_ONLY)
+      REGISTER_SIZE      => REGISTER_SIZE,
+      RESET_VECTOR       => RESET_VECTOR,
+      MULTIPLY_ENABLE    => MULTIPLY_ENABLE,
+      DIVIDE_ENABLE      => DIVIDE_ENABLE,
+      SHIFTER_MAX_CYCLES => SHIFTER_MAX_CYCLES,
+      COUNTER_LENGTH     => COUNTER_LENGTH,
+      BRANCH_PREDICTORS  => BRANCH_PREDICTORS,
+      PIPELINE_STAGES    => PIPELINE_STAGES,
+      FORWARD_ALU_ONLY   => FORWARD_ALU_ONLY)
     port map(
       clk   => clk,
       reset => reset,

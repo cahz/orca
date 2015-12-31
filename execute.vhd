@@ -20,7 +20,7 @@ entity execute is
     RESET_VECTOR         : natural;
     MULTIPLY_ENABLE      : boolean;
     DIVIDE_ENABLE        : boolean;
-    SHIFTER_SINGLE_CYCLE : natural range 0 to 2;
+    SHIFTER_MAX_CYCLES : natural ;
     COUNTER_LENGTH       : natural;
     FORWARD_ALU_ONLY     : boolean);
   port(
@@ -277,7 +277,7 @@ begin
       SIGN_EXTENSION_SIZE  => SIGN_EXTENSION_SIZE,
       MULTIPLY_ENABLE      => MULTIPLY_ENABLE,
       DIVIDE_ENABLE        => DIVIDE_ENABLE,
-      SHIFTER_SINGLE_CYCLE => SHIFTER_SINGLE_CYCLE)
+      SHIFTER_MAX_CYCLES => SHIFTER_MAX_CYCLES)
     port map (
       clk               => clk,
       stall_in          => stall_pipeline,

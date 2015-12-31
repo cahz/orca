@@ -39,8 +39,8 @@ endif
 ifdef PIPELINE_STAGES
 	sed -i 's|parameter name="PIPELINE_STAGES" value=".*" />|parameter name="PIPELINE_STAGES" value=$(PIPELINE_STAGES) />|' $(QSYS_FILE)
 endif
-ifdef SHIFTER_SINGLE_CYCLE
-	sed -i 's|parameter name="SHIFTER_SINGLE_CYCLE" value=".*" />|parameter name="SHIFTER_SINGLE_CYCLE" value=$(SHIFTER_SINGLE_CYCLE) />|' $(QSYS_FILE)
+ifdef SHIFTER_MAX_CYCLES
+	sed -i 's|parameter name="SHIFTER_MAX_CYCLES" value=".*" />|parameter name="SHIFTER_MAX_CYCLES" value=$(SHIFTER__CYCLES) />|' $(QSYS_FILE)
 endif
 ifdef FORWARD_ALU_ONLY
 	sed -i 's|parameter name="FORWARD_ALU_ONLY" value=".*" />|parameter name="FORWARD_ALU_ONLY" value=$(FORWARD_ALU_ONLY) />|' $(QSYS_FILE)
