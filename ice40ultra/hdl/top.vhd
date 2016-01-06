@@ -283,7 +283,7 @@ begin
       REGISTER_SIZE      => REGISTER_SIZE,
       MULTIPLY_ENABLE    => 0,
       SHIFTER_MAX_CYCLES => 32,
-      COUNTER_LENGTH     => 0,
+      COUNTER_LENGTH     => 32,
       PIPELINE_STAGES    => 4)
     port map(
 
