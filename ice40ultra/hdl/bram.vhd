@@ -65,15 +65,18 @@ architecture rtl of bram_lattice is
 
   begin
     --ram_to_return := (others => (others => '0'));
-    -- pragma translate_off
+
     for i in ram_type'range loop
+      ram_to_return(i) := (others => '1');
+    -- pragma translate_off
       if not endfile(ramfile) then
         readline(ramfile, line_read);
         read(line_read, ss);
         ram_to_return(i) := to_slv(ss)(BYTE_SIZE*(bytesel+1) -1 downto BYTE_SIZE*bytesel);
       end if;
-    end loop;
     -- pragma translate_on
+    end loop;
+
     return ram_to_return;
   end function;
 

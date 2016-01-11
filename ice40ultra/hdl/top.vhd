@@ -13,10 +13,10 @@ entity top is
     reset_btn : in std_logic;
 
     --uart
-    rxd       : in    std_logic;
-    txd       : out   std_logic;
-    cts       : in    std_logic;
-    rts       : out   std_logic;
+    rxd : in  std_logic;
+    txd : out std_logic;
+    cts : in  std_logic;
+    rts : out std_logic;
 
     R_LED  : out std_logic;
     G_LED  : out std_logic;
@@ -29,27 +29,19 @@ end entity;
 
 architecture rtl of top is
 
-  constant REGISTER_SIZE : integer :=32;
+  constant REGISTER_SIZE : integer := 32;
 
+  --for combined memory
   constant RAM_SIZE      : natural := 8*1024;
+  --for seperate memory
+  constant INST_RAM_SIZE : natural := 8*1024;
+  constant DATA_RAM_SIZE : natural := 4*1024;
+
+  constant SEPERATE_MEMS : boolean := true;
+
 
   signal reset : std_logic;
 
-  signal RAM_ADR_I  : std_logic_vector(31 downto 0);
-  signal RAM_DAT_I  : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal RAM_WE_I   : std_logic;
-  signal RAM_CYC_I  : std_logic;
-  signal RAM_STB_I  : std_logic;
-  signal RAM_SEL_I  : std_logic_vector(REGISTER_SIZE/8-1 downto 0);
-  signal RAM_CTI_I  : std_logic_vector(2 downto 0);
-  signal RAM_BTE_I  : std_logic_vector(1 downto 0);
-  signal RAM_LOCK_I : std_logic;
-
-  signal RAM_STALL_O : std_logic;
-  signal RAM_DAT_O   : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal RAM_ACK_O   : std_logic;
-  signal RAM_ERR_O   : std_logic;
-  signal RAM_RTY_O   : std_logic;
 
   signal data_ADR_O  : std_logic_vector(31 downto 0);
   signal data_DAT_O  : std_logic_vector(REGISTER_SIZE-1 downto 0);
@@ -182,7 +174,7 @@ architecture rtl of top is
   signal heartbeat_counter        : unsigned(HEARTBEAT_COUNTER_BITS-1 downto 0) := (others => '0');
 
 
-  signal auto_reset_count : unsigned(3 downto 0):= (others => '0');
+  signal auto_reset_count : unsigned(3 downto 0) := (others => '0');
   signal auto_reset       : std_logic;
 begin
   process(clk)
@@ -198,9 +190,108 @@ begin
   end process;
   reset <= not reset_btn or auto_reset;
 
-  mem : component wb_ram
+--  COMBINED_RAM_GEN : if not SEPERATE_MEMS generate
+--    signal RAM_ADR_I  : std_logic_vector(31 downto 0);
+--    signal RAM_DAT_I  : std_logic_vector(REGISTER_SIZE-1 downto 0);
+--    signal RAM_WE_I   : std_logic;
+--    signal RAM_CYC_I  : std_logic;
+--    signal RAM_STB_I  : std_logic;
+--    signal RAM_SEL_I  : std_logic_vector(REGISTER_SIZE/8-1 downto 0);
+--    signal RAM_CTI_I  : std_logic_vector(2 downto 0);
+--    signal RAM_BTE_I  : std_logic_vector(1 downto 0);
+--    signal RAM_LOCK_I : std_logic;
+
+--    signal RAM_STALL_O : std_logic;
+--    signal RAM_DAT_O   : std_logic_vector(REGISTER_SIZE-1 downto 0);
+--    signal RAM_ACK_O   : std_logic;
+--    signal RAM_ERR_O   : std_logic;
+--    signal RAM_RTY_O   : std_logic;
+--  begin
+--    mem : component wb_ram
+--      generic map(
+--        SIZE             => RAM_SIZE,
+--        INIT_FILE_FORMAT => "hex",
+--        INIT_FILE_NAME   => "test.mem",
+--        LATTICE_FAMILY   => "iCE5LP")
+--      port map(
+--        CLK_I => clk,
+--        RST_I => reset,
+
+--        ADR_I  => RAM_ADR_I,
+--        DAT_I  => RAM_DAT_I,
+--        WE_I   => RAM_WE_I,
+--        CYC_I  => RAM_CYC_I,
+--        STB_I  => RAM_STB_I,
+--        SEL_I  => RAM_SEL_I,
+--        CTI_I  => RAM_CTI_I,
+--        BTE_I  => RAM_BTE_I,
+--        LOCK_I => RAM_LOCK_I,
+
+--        STALL_O => RAM_STALL_O,
+--        DAT_O   => RAM_DAT_O,
+--        ACK_O   => RAM_ACK_O,
+--        ERR_O   => RAM_ERR_O,
+--        RTY_O   => RAM_RTY_O);
+
+--    arbiter : component wb_arbiter
+--      port map (
+--        CLK_I => clk,
+--        RST_I => reset,
+
+--        slave1_ADR_I  => data_ram_ADR_I,
+--        slave1_DAT_I  => data_ram_DAT_I,
+--        slave1_WE_I   => data_ram_WE_I,
+--        slave1_CYC_I  => data_ram_CYC_I,
+--        slave1_STB_I  => data_ram_STB_I,
+--        slave1_SEL_I  => data_ram_SEL_I,
+--        slave1_CTI_I  => data_ram_CTI_I,
+--        slave1_BTE_I  => data_ram_BTE_I,
+--        slave1_LOCK_I => data_ram_LOCK_I,
+
+--        slave1_STALL_O => data_ram_STALL_O,
+--        slave1_DAT_O   => data_ram_DAT_O,
+--        slave1_ACK_O   => data_ram_ack_O,
+----      slave1_ERR_O   => data_ERR_I,
+----      slave1_RTY_O   => data_RTY_I,
+
+--        slave2_ADR_I  => instr_ADR_O,
+--        slave2_DAT_I  => instr_DAT_O,
+--        slave2_WE_I   => instr_WE_O,
+--        slave2_CYC_I  => instr_CYC_O,
+--        slave2_STB_I  => instr_STB_O,
+--        slave2_SEL_I  => instr_SEL_O,
+--        slave2_CTI_I  => instr_CTI_O,
+--        slave2_BTE_I  => instr_BTE_O,
+--        slave2_LOCK_I => instr_LOCK_O,
+
+--        slave2_STALL_O => mem_instr_stall,
+--        slave2_DAT_O   => instr_DAT_I,
+--        slave2_ACK_O   => mem_instr_ACK,
+--        slave2_ERR_O   => instr_ERR_I,
+--        slave2_RTY_O   => instr_RTY_I,
+
+--        master_ADR_O  => RAM_ADR_I,
+--        master_DAT_O  => RAM_DAT_I,
+--        master_WE_O   => RAM_WE_I,
+--        master_CYC_O  => RAM_CYC_I,
+--        master_STB_O  => RAM_STB_I,
+--        master_SEL_O  => RAM_SEL_I,
+--        master_CTI_O  => RAM_CTI_I,
+--        master_BTE_O  => RAM_BTE_I,
+--        master_LOCK_O => RAM_LOCK_I,
+
+--        master_STALL_I => ram_STALL_O,
+--        master_DAT_I   => RAM_DAT_O,
+--        master_ACK_I   => RAM_ACK_O,
+--        master_ERR_I   => RAM_ERR_O,
+--        master_RTY_I   => RAM_RTY_O);
+
+
+--  end generate;
+
+  imem : component wb_ram
     generic map(
-      SIZE             => RAM_SIZE,
+      SIZE             => INST_RAM_SIZE,
       INIT_FILE_FORMAT => "hex",
       INIT_FILE_NAME   => "test.mem",
       LATTICE_FAMILY   => "iCE5LP")
@@ -208,75 +299,48 @@ begin
       CLK_I => clk,
       RST_I => reset,
 
-      ADR_I  => RAM_ADR_I,
-      DAT_I  => RAM_DAT_I,
-      WE_I   => RAM_WE_I,
-      CYC_I  => RAM_CYC_I,
-      STB_I  => RAM_STB_I,
-      SEL_I  => RAM_SEL_I,
-      CTI_I  => RAM_CTI_I,
-      BTE_I  => RAM_BTE_I,
-      LOCK_I => RAM_LOCK_I,
+      ADR_I  => instr_ADR_O,
+      DAT_I  => instr_DAT_O,
+      WE_I   => instr_WE_O,
+      CYC_I  => instr_CYC_O,
+      STB_I  => instr_STB_O,
+      SEL_I  => instr_SEL_O,
+      CTI_I  => instr_CTI_O,
+      BTE_I  => instr_BTE_O,
+      LOCK_I => instr_LOCK_O,
 
-      STALL_O => RAM_STALL_O,
-      DAT_O   => RAM_DAT_O,
-      ACK_O   => RAM_ACK_O,
-      ERR_O   => RAM_ERR_O,
-      RTY_O   => RAM_RTY_O);
+      STALL_O => mem_instr_stall,
+      DAT_O   => instr_DAT_I,
+      ACK_O   => mem_instr_ACK,
+      ERR_O   => instr_ERR_I,
+      RTY_O   => instr_RTY_I);
 
-
-  arbiter : component wb_arbiter
-    port map (
+  dmem : component wb_ram
+    generic map(
+      SIZE             => DATA_RAM_SIZE,
+      INIT_FILE_FORMAT => "hex",
+      INIT_FILE_NAME   => "test.mem",
+      LATTICE_FAMILY   => "iCE5LP")
+    port map(
       CLK_I => clk,
       RST_I => reset,
 
-      slave1_ADR_I  => data_ram_ADR_I,
-      slave1_DAT_I  => data_ram_DAT_I,
-      slave1_WE_I   => data_ram_WE_I,
-      slave1_CYC_I  => data_ram_CYC_I,
-      slave1_STB_I  => data_ram_STB_I,
-      slave1_SEL_I  => data_ram_SEL_I,
-      slave1_CTI_I  => data_ram_CTI_I,
-      slave1_BTE_I  => data_ram_BTE_I,
-      slave1_LOCK_I => data_ram_LOCK_I,
+      ADR_I   => data_ram_ADR_I,
+      DAT_I   => data_ram_DAT_I,
+      WE_I    => data_ram_WE_I,
+      CYC_I   => data_ram_CYC_I,
+      STB_I   => data_ram_STB_I,
+      SEL_I   => data_ram_SEL_I,
+      CTI_I   => data_ram_CTI_I,
+      BTE_I   => data_ram_BTE_I,
+      LOCK_I  => data_ram_LOCK_I,
+      STALL_O => data_ram_STALL_O,
+      DAT_O   => data_ram_DAT_O,
+      ACK_O   => data_ram_ack_O,
+      ERR_O   => data_ram_ERR_O,
+      RTY_O   => data_ram_RTY_O);
 
-      slave1_STALL_O => data_ram_STALL_O,
-      slave1_DAT_O   => data_ram_DAT_O,
-      slave1_ACK_O   => data_ram_ack_O,
---      slave1_ERR_O   => data_ERR_I,
---      slave1_RTY_O   => data_RTY_I,
 
-      slave2_ADR_I  => instr_ADR_O,
-      slave2_DAT_I  => instr_DAT_O,
-      slave2_WE_I   => instr_WE_O,
-      slave2_CYC_I  => instr_CYC_O,
-      slave2_STB_I  => instr_STB_O,
-      slave2_SEL_I  => instr_SEL_O,
-      slave2_CTI_I  => instr_CTI_O,
-      slave2_BTE_I  => instr_BTE_O,
-      slave2_LOCK_I => instr_LOCK_O,
-
-      slave2_STALL_O => mem_instr_stall,
-      slave2_DAT_O   => instr_DAT_I,
-      slave2_ACK_O   => mem_instr_ACK,
-      slave2_ERR_O   => instr_ERR_I,
-      slave2_RTY_O   => instr_RTY_I,
-
-      master_ADR_O  => RAM_ADR_I,
-      master_DAT_O  => RAM_DAT_I,
-      master_WE_O   => RAM_WE_I,
-      master_CYC_O  => RAM_CYC_I,
-      master_STB_O  => RAM_STB_I,
-      master_SEL_O  => RAM_SEL_I,
-      master_CTI_O  => RAM_CTI_I,
-      master_BTE_O  => RAM_BTE_I,
-      master_LOCK_O => RAM_LOCK_I,
-
-      master_STALL_I => ram_STALL_O,
-      master_DAT_I   => RAM_DAT_O,
-      master_ACK_I   => RAM_ACK_O,
-      master_ERR_I   => RAM_ERR_O,
-      master_RTY_I   => RAM_RTY_O);
 
   rv : component riscV_wishbone
     generic map (
@@ -323,9 +387,9 @@ begin
 
   split_wb_data : component wb_splitter
     generic map(
-      master0_address => (16#00000000#, RAM_SIZE),  --RAM
-      master1_address => (16#00010000#, 4*1024),    --led
-      master2_address => (16#00020000#, 4*1024))    --uart
+      master0_address => (0+INST_RAM_SIZE, DATA_RAM_SIZE),  --RAM
+      master1_address => (16#00010000#, 4*1024),            --led
+      master2_address => (16#00020000#, 4*1024))            --uart
 
     port map(
       clk_i => clk,
@@ -645,7 +709,7 @@ begin
 
   hp_pwm <= heartbeat_counter(heartbeat_counter'left) when heartbeat_counter(7 downto 0) = "00000001" else '0';
 
-  process(clk, reset)
+  process(clk)
   begin
     if rising_edge(clk) then
       heartbeat_counter <= heartbeat_counter + to_unsigned(1, heartbeat_counter'length);
