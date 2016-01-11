@@ -62,17 +62,22 @@ architecture rtl of bram_lattice is
     variable ss            : string(7 downto 0);
     -- pragma translate_on
     variable ram_to_return : ram_type;
-
+    variable tmp : std_logic_vector(31 downto 0);
   begin
     --ram_to_return := (others => (others => '0'));
 
     for i in ram_type'range loop
-      ram_to_return(i) := (others => '1');
+      --this weird initialization is to avoid having the rams be removed
+      --if the we is tied to zero. The tools will optimize away a ROM of all zeros
+
+      tmp := std_logic_vector(to_unsigned(i*i*i,32));
+      ram_to_return(i) := tmp(BYTE_SIZE*(bytesel+1) -1 downto BYTE_SIZE*bytesel);
     -- pragma translate_off
       if not endfile(ramfile) then
         readline(ramfile, line_read);
         read(line_read, ss);
-        ram_to_return(i) := to_slv(ss)(BYTE_SIZE*(bytesel+1) -1 downto BYTE_SIZE*bytesel);
+        tmp := to_slv(ss);
+        ram_to_return(i) := tmp(BYTE_SIZE*(bytesel+1) -1 downto BYTE_SIZE*bytesel);
       end if;
     -- pragma translate_on
     end loop;

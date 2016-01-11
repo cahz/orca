@@ -34,7 +34,7 @@ architecture rtl of top is
   --for combined memory
   constant RAM_SIZE      : natural := 8*1024;
   --for seperate memory
-  constant INST_RAM_SIZE : natural := 8*1024;
+  constant INST_RAM_SIZE : natural := 4*1024;
   constant DATA_RAM_SIZE : natural := 4*1024;
 
   constant SEPERATE_MEMS : boolean := true;
