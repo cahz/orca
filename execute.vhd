@@ -387,24 +387,25 @@ begin
                                     br_taken_out,     --taken
                                     predict_corr_en,  --flush
                                     is_branch);       --is_branch
---my_print : process(clk)
---  variable my_line : line;            -- type 'line' comes from textio
---begin
---  if rising_edge(clk) then
---    if valid_instr = '1' then
---      write(my_line, string'("executing pc = "));  -- formatting
---      hwrite(my_line, (pc_current));  -- format type std_logic_vector as hex
---      write(my_line, string'(" instr =  "));       -- formatting
---      hwrite(my_line, (instruction));  -- format type std_logic_vector as hex
---      if ls_unit_waiting = '1' then
---        write(my_line, string'(" stalling"));      -- formatting
---      end if;
---      writeline(output, my_line);     -- write to "output"
---    else
---    --write(my_line, string'("bubble"));  -- formatting
---    --writeline(output, my_line);     -- write to "output"
---    end if;
---  end if;
---end process my_print;
-
+--pragma translate_off
+  my_print : process(clk)
+    variable my_line : line;            -- type 'line' comes from textio
+  begin
+    if rising_edge(clk) then
+      if valid_instr = '1' then
+        write(my_line, string'("executing pc = "));  -- formatting
+        hwrite(my_line, (pc_current));  -- format type std_logic_vector as hex
+        write(my_line, string'(" instr =  "));       -- formatting
+        hwrite(my_line, (instruction));  -- format type std_logic_vector as hex
+        if stall_pipeline = '1' then
+          write(my_line, string'(" stalling"));      -- formatting
+        end if;
+        writeline(output, my_line);     -- write to "output"
+      else
+      --write(my_line, string'("bubble"));  -- formatting
+      --writeline(output, my_line);     -- write to "output"
+      end if;
+    end if;
+  end process my_print;
+--pragma translate_on
 end architecture;

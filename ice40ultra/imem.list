@@ -1,8 +1,8 @@
-imem.ram.ram3_ram3_0_1 init_00.imem
-imem.ram.ram3_ram3_0_0 init_01.imem
-imem.ram.ram2_ram2_0_1 init_02.imem
-imem.ram.ram2_ram2_0_0 init_03.imem
-imem.ram.ram1_ram1_0_1 init_04.imem
-imem.ram.ram1_ram1_0_0 init_05.imem
-imem.ram.ram0_ram0_0_1 init_06.imem
-imem.ram.ram0_ram0_0_0 init_07.imem
+SEPERATE_MEM_GEN_imem.ram.ram3_ram3_0_1 init_00.imem
+SEPERATE_MEM_GEN_imem.ram.ram3_ram3_0_0 init_01.imem
+SEPERATE_MEM_GEN_imem.ram.ram2_ram2_0_1 init_02.imem
+SEPERATE_MEM_GEN_imem.ram.ram2_ram2_0_0 init_03.imem
+SEPERATE_MEM_GEN_imem.ram.ram1_ram1_0_1 init_04.imem
+SEPERATE_MEM_GEN_imem.ram.ram1_ram1_0_0 init_05.imem
+SEPERATE_MEM_GEN_imem.ram.ram0_ram0_0_1 init_06.imem
+SEPERATE_MEM_GEN_imem.ram.ram0_ram0_0_0 init_07.imem

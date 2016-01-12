@@ -67,9 +67,15 @@ architecture rtl of riscV_wishbone is
   signal data_waitrequest    : std_logic;
   signal data_readdatavalid  : std_logic;
   signal data_saved_data     : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal was_waiting         : std_logic;
+  signal data_was_waiting    : std_logic;
   signal data_delayed_valid  : std_logic;
   signal data_suppress_valid : std_logic;
+
+  signal instr_readdatavalid  : std_logic;
+  signal instr_saved_data     : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal instr_was_waiting    : std_logic;
+  signal instr_delayed_valid  : std_logic;
+  signal instr_suppress_valid : std_logic;
 
 
 
@@ -155,9 +161,8 @@ begin  -- architecture rtl
   data_CTI_O             <= CLASSIC_CYC;
   --input
   avm_data_readdata      <= data_saved_data when data_delayed_valid = '1' else data_DAT_I;
-  data_waitrequest       <= data_STALL_I;
   data_readdatavalid     <= data_ACK_I and data_readvalid_mask;
-  avm_data_waitrequest   <= data_waitrequest;
+  avm_data_waitrequest   <= data_STALL_I;
   avm_data_readdatavalid <= (data_readdatavalid and not data_suppress_valid) or data_delayed_valid;
 
 
@@ -171,9 +176,11 @@ begin  -- architecture rtl
   instr_CYC_O                   <= avm_instruction_write or avm_instruction_read;
   instr_CTI_O                   <= CLASSIC_CYC;
   --input
-  avm_instruction_readdata      <= instr_DAT_I;
+  avm_instruction_readdata      <= instr_saved_data when instr_delayed_valid = '1' else instr_DAT_I;
   avm_instruction_waitrequest   <= instr_STALL_I;
-  avm_instruction_readdatavalid <= instr_ACK_I;
+  instr_readdatavalid           <= instr_ACK_I and instr_readvalid_mask;
+  avm_instruction_readdatavalid <= (instr_readdatavalid and not instr_suppress_valid) or instr_delayed_valid;
+
 
 
   --if previous cycle was a read, then this cycle can have a
@@ -206,11 +213,18 @@ begin  -- architecture rtl
   process(clk)
   begin
     if rising_edge(clk) then
-      was_waiting        <= data_STALL_I;
+      data_was_waiting   <= data_STALL_I;
       data_delayed_valid <= data_suppress_valid;
       data_saved_data    <= data_DAT_I;
+
+      instr_was_waiting   <= instr_STALL_I;
+      instr_delayed_valid <= instr_suppress_valid;
+      instr_saved_data    <= instr_DAT_I;
+
     end if;
   end process;
-  data_suppress_valid <= was_waiting and data_readdatavalid;
+
+  data_suppress_valid        <= data_was_waiting and data_readdatavalid;
+  instr_suppress_valid <= instr_was_waiting and instr_readdatavalid;
 
 end architecture rtl;

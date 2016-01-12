@@ -61,19 +61,17 @@ if {$::argc == 2} {
 					 file delete $ram_file_name
 				}
 				set ram_file [open $ram_file_name "w"]
-
 				lappend ram_files $ram_file
 				puts -nonewline $ram_file "0:"
 		  }
 		  set mem_file [open $mem_file_name "r"]
 		  set line_number 1
 		  while {[gets $mem_file mem_line] != -1 && $line_number < 2048} {
-
-				if {[string length $mem_line] >= 4 && [string range $mem_line 0 0] != "#"} {
-					 for {set i 0} {$i < 4} {incr i} {
+				if {[string length $mem_line] >= 8 && [string range $mem_line 0 0] != "#"} {
+					 for {set i 0} {$i < [llength $ram_files]} {incr i} {
 						  set hex_value [expr 0x[string range $mem_line $i $i]]
-						  puts -nonewline [lindex $ram_files [expr 2 * $i]] "[expr ($hex_value / 4) % 4]  "
-						  puts -nonewline [lindex $ram_files [expr (2 * $i) + 1]] "[expr $hex_value % 4]  "
+						  puts -nonewline [lindex $ram_files [expr $i]] "[format %x $hex_value ]  "
+
 					 }
 				}
 				incr line_number
