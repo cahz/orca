@@ -1,6 +1,6 @@
 [Project]
 ProjectVersion=2.0
-Version=Lattice Semiconductor Corporation iCEcube - Release: 2015.04.27409 - Build Date: May 27 2015 16:18:31
+Version=Lattice Semiconductor Corporation iCEcube - Release: 2015.08.27744 - Build Date: Oct 14 2015 17:07:49
 ProjectName=ice40ultra
 Vendor=SiliconBlue
 Synthesis=synplify
@@ -20,7 +20,7 @@ NetlistFile=ice40ultra_Implmnt/ice40ultra.edf
 AdditionalEDIFFile=
 IPEDIFFile=
 DesignLib=ice40ultra_Implmnt/sbt/netlist/oadb-top
-DesignView=_ep
+DesignView=_rt
 DesignCell=top
 SynthesisSDCFile=ice40ultra_Implmnt/ice40ultra.scf
 UserPinConstraintFile=
@@ -48,6 +48,7 @@ FSMEncodingStyle=Auto
 FixGatedClocks=True
 I/OInsertion=True
 IntermediateFileDump=False
+LoopLimit=1950
 MaximalFanout=10000
 MemoryInitialValueFileSearchPath=
 NumberOfCriticalPaths=3
@@ -83,3 +84,4 @@ BitmapSetNoUsedIONoPullup=no
 FloorPlannerShowFanInNets=yes
 FloorPlannerShowFanOutNets=yes
 HookTo3rdPartyTextEditor=no
+
