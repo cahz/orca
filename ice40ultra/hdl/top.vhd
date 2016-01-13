@@ -23,7 +23,7 @@ entity top is
     B_LED  : out std_logic;
     HP_LED : out std_logic;
 
-    led_out : out std_logic_vector(2 downto 0)
+    gpio : inout std_logic_vector(11 downto 0)
     );
 end entity;
 
@@ -89,6 +89,21 @@ architecture rtl of top is
   signal led_lock_i  : std_logic;
   signal led_err_o   : std_logic;
   signal led_rty_o   : std_logic;
+
+  signal gpio_adr_i   : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal gpio_dat_i   : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal gpio_dat_o   : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal gpio_stb_i   : std_logic;
+  signal gpio_cyc_i   : std_logic;
+  signal gpio_we_i    : std_logic;
+  signal gpio_sel_i   : std_logic_vector(3 downto 0);
+  signal gpio_cti_i   : std_logic_vector(2 downto 0);
+  signal gpio_bte_i   : std_logic_vector(1 downto 0);
+  signal gpio_ack_o   : std_logic;
+  signal gpio_stall_o : std_logic;
+  signal gpio_lock_i  : std_logic;
+  signal gpio_err_o   : std_logic;
+  signal gpio_rty_o   : std_logic;
 
 
 
@@ -390,9 +405,10 @@ begin
 
   split_wb_data : component wb_splitter
     generic map(
-      master0_address => (0+INST_RAM_SIZE, DATA_RAM_SIZE),  --RAM
-      master1_address => (16#00010000#, 4*1024),            --led
-      master2_address => (16#00020000#, 4*1024))            --uart
+      master0_address => (0+INST_RAM_SIZE, DATA_RAM_SIZE)  --RAM
+, master1_address     => (16#00010000#, 4*1024)            --led
+, master2_address     => (16#00020000#, 4*1024)            --uart
+, master3_address     => (16#00030000#, 4*1024))
 
     port map(
       clk_i => clk,
@@ -458,13 +474,33 @@ begin
       master2_DAT_I   => data_uart_DAT_O,
       master2_ACK_I   => data_uart_ACK_O,
       master2_ERR_I   => data_uart_ERR_O,
-      master2_RTY_I   => data_uart_RTY_O);
+      master2_RTY_I   => data_uart_RTY_O,
+
+
+      master3_ADR_O   => gpio_ADR_I,
+      master3_DAT_O   => gpio_DAT_I,
+      master3_WE_O    => gpio_WE_I,
+      master3_CYC_O   => gpio_CYC_I,
+      master3_STB_O   => gpio_STB_I,
+      master3_SEL_O   => gpio_SEL_I,
+      master3_CTI_O   => gpio_CTI_I,
+      master3_BTE_O   => gpio_BTE_I,
+      master3_LOCK_O  => gpio_LOCK_I,
+      master3_STALL_I => gpio_STALL_O,
+      master3_DAT_I   => gpio_DAT_O,
+      master3_ACK_I   => gpio_ACK_O,
+      master3_ERR_I   => gpio_ERR_O,
+      master3_RTY_I   => gpio_RTY_O
+
+      );
 
 
   instr_stall_i <= uart_stall or mem_instr_stall;
   instr_ack_i   <= not uart_stall and mem_instr_ack;
 
   led_pio : component wb_pio
+    generic map (
+      ALLOW_INPUT => false)
     port map(
       CLK_I => clk,
       RST_I => reset,
@@ -483,8 +519,30 @@ begin
       DATA_O  => led_DAT_O,
       ERR_O   => led_ERR_O,
       RTY_O   => led_RTY_O,
-      output  => led_pio_out);
+      input_output  => led_pio_out);
 
+    gpio_pio : component wb_pio
+    generic map (
+       DATA_WIDTH => gpio'length)
+    port map(
+      CLK_I => clk,
+      RST_I => reset,
+
+      ADR_I   => gpio_ADR_I,
+      DAT_I   => gpio_DAT_I(gpio'range),
+      WE_I    => gpio_WE_I,
+      CYC_I   => gpio_CYC_I,
+      STB_I   => gpio_STB_I,
+      SEL_I   => gpio_SEL_I(gpio'length/8-1 downto 0),
+      CTI_I   => gpio_CTI_I,
+      BTE_I   => gpio_BTE_I,
+      LOCK_I  => gpio_LOCK_I,
+      ACK_O   => gpio_ACK_O,
+      STALL_O => gpio_STALL_O,
+      DATA_O  => gpio_DAT_O(gpio'range),
+      ERR_O   => gpio_ERR_O,
+      RTY_O   => gpio_RTY_O,
+      input_output  => gpio);
 
 -----------------------------------------------------------------------------
 -- Debugging logic (PC over UART)
@@ -696,7 +754,6 @@ begin
   green_led <= '1' when unsigned(led_pio_out(15 downto 8)) > heartbeat_counter(7 downto 0)  else '0';
   blue_led  <= '1' when unsigned(led_pio_out(7 downto 0)) > heartbeat_counter(7 downto 0)   else '0';
 
-  led_out <= led_pio_out(26 downto 24);
 
   led : component my_led
     port map(

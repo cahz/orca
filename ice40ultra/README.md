@@ -27,6 +27,27 @@ chip to connect to it. The rxd pin of the PmodUSBUART is connected to pin B2 on 
 as txd in the pcf constraints file). For information on how to control the uart see softare/main.c
 for an example, or take a look at [this datasheet](http://www.latticesemi.com/~/media/LatticeSemi/Documents/ReferenceDesigns/SZ/WISHBONEUART-Documentation.pdf?document_id=32336)
 
+The rest of the pins (there are 12 left available) are used as general purpose IO.
+There is a Data register located at 0x00030000, and a control register located at
+0x00030004. When a bit a bit in the control register is set, then the pin is an output,
+when it is clear the pin is an input. The following table shows how the bits are mapped
+to pins on the FPGA.
+
+||**GPIO BIT** | **PIN** ||
+|:---|:--:|
+|0   |E2 |
+|1   |F3 |
+|2   |E3 |
+|3   |F4 |
+|4   |E4 |
+|5   |F5 |
+|6   |E5 |
+|7   |B4 |
+|8   |B5 |
+|9   |D5 |
+|10  |D6 |
+|11  |E6 |
+
 
 ##Memory System
 The system has 4K of instruction memory and 4K of Data memory, all of which is created

@@ -4,6 +4,11 @@
 #define SYS_CLK 12000000
 volatile int *ledrgb= (volatile int*)0x10000;
 
+/********/
+/* GPIO */
+/********/
+volatile int *gpio_data= (volatile int*)0x30000;
+volatile int *gpio_ctrl= (volatile int*)0x30004;
 //////////////////////
 //
 // UART stuff
@@ -46,15 +51,21 @@ int main()
 	int colour=0x01;
 	UART_INIT();
 	init_printf(0,mputc);
-
+	int delay_length=500;
 	for(;;){
 		if ((colour<<=8) >=0x00800000){
 			colour>>= 23;
 		}
-		debugx(colour);
 		*ledrgb=colour;
 		printf("Hello World %d\r\n",i++);
-		delayms(500);
+		debugx(*gpio_data);
+
+		if((*gpio_data)&1){
+			delay_length=500;
+		}else{
+			delay_length=250;
+		}
+		delayms(delay_length);
 	}
 }
 
