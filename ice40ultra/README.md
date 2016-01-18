@@ -9,6 +9,10 @@ Make sure to compile the toolchain by disabling the floating point option, and e
 while running "./configure" run it with the following options:- 
 
     >./configure --with-xlen=32 --with-arch=IMA --prefix=/opt/riscv32i
+    
+If you donot wish to compile the entire toolchain then while <a href="http://riscv.org/download.html#tab_isa-sim"> building your code</a> for riscv please use the following compiler flags:-
+
+    >riscv64-unknown-elf-gcc -m32 -march=RV32I
 
 
 To build you need the ICEcube2 toolchain from Lattice Semiconductor installed.
