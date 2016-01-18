@@ -2,8 +2,13 @@
 
 This is a sample project meant for the [ice40ultra breakout board](http://www.latticesemi.com/en/Products/DevelopmentBoardsAndKits/iCE40UltraBreakoutBoard.aspx)
 
-To build the software, make sure you have the [riscv-gnu-toolchain](https://github.com/riscv/riscv-gnu-toolchain)
-in your path. Then run `make build-software` from this directory.
+To build the software, make sure you have the [riscv-gnu-toolchain](https://github.com/riscv/riscv-gnu-toolchain) in your path. Then run `make build-software` from this directory.
+
+Make sure to compile the toolchain by disabling the floating point option, and enable compilation for 32bit. Follow the instructions in the above link with the following caveat:-
+
+while running "./configure" run it with the following options:- 
+
+    >./configure --with-xlen=32 --with-arch=IMA --prefix=/opt/riscv32i
 
 
 To build you need the ICEcube2 toolchain from Lattice Semiconductor installed.
