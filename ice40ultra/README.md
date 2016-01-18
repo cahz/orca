@@ -8,11 +8,12 @@ Make sure to compile the toolchain by disabling the floating point option, and e
 
 while running "./configure" run it with the following options:- 
 
-    >./configure --with-xlen=32 --with-arch=IMA --prefix=/opt/riscv32i
+    >./configure --enable-multilib --prefix=/opt/riscv
     
-If you donot wish to compile the entire toolchain then while <a href="http://riscv.org/download.html#tab_isa-sim"> building your code</a> for riscv please use the following compiler flags:-
-
-    >riscv64-unknown-elf-gcc -m32 -march=RV32I
+Note that because this core only implements RV32I them makefile uses some gcc flags to make 
+sure the compiler does not generate any unimplemented instructions, notably `-m32 -march=RV32I`. 
+When you write your own software be sure to use these flags.The Makefile is fairly straight forward 
+to read and see how this works
 
 
 To build you need the ICEcube2 toolchain from Lattice Semiconductor installed.
@@ -42,7 +43,7 @@ There is a Data register located at 0x00030000, and a control register located a
 when it is clear the pin is an input. The following table shows how the bits are mapped
 to pins on the FPGA.
 
-||**GPIO BIT** | **PIN** ||
+|**GPIO BIT** | **PIN** |
 |:---|:--:|
 |0   |E2 |
 |1   |F3 |

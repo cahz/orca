@@ -9,13 +9,13 @@ C_SRCS+=printf.c
 C_OBJ_FILES=$(addprefix obj/,$(addsuffix .o, $(C_SRCS)))
 S_OBJ_FILES=$(addprefix obj/,$(addsuffix .o, $(AS_SRCS)))
 
-CROSS_COMPILE=riscv32-unknown-elf-
+CROSS_COMPILE=riscv64-unknown-elf-
 CC=$(CROSS_COMPILE)gcc
 OBJCOPY=$(CROSS_COMPILE)objcopy
 OBJDUMP=$(CROSS_COMPILE)objdump
-
-CFLAGS=-static  -MD -Wall -std=gnu99 -O2 -fno-omit-frame-pointer -ffast-math -fno-common  -DPREALLOCATE=1 -DHOST_DEBUG=0
-LD_FLAGS=-nostartfiles -ffast-math
+ARCH=RV32IXmxp
+CFLAGS= -m32  -march=$(ARCH) -O2 -MD -Wall -std=gnu99
+LD_FLAGS= -m32 -march=$(ARCH) -static -nostartfiles
 
 TARGET=test
 
