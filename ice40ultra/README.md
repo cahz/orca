@@ -2,8 +2,18 @@
 
 This is a sample project meant for the [ice40ultra breakout board](http://www.latticesemi.com/en/Products/DevelopmentBoardsAndKits/iCE40UltraBreakoutBoard.aspx)
 
-To build the software, make sure you have the [riscv-gnu-toolchain](https://github.com/riscv/riscv-gnu-toolchain)
-in your path. Then run `make build-software` from this directory.
+To build the software, make sure you have the [riscv-gnu-toolchain](https://github.com/riscv/riscv-gnu-toolchain) in your path. Then run `make build-software` from this directory.
+
+Make sure to compile the toolchain by disabling the floating point option, and enable compilation for 32bit. Follow the instructions in the above link with the following caveat:-
+
+while running "./configure" run it with the following options:- 
+
+    >./configure --enable-multilib --prefix=/opt/riscv
+    
+Note that because this core only implements RV32I them makefile uses some gcc flags to make 
+sure the compiler does not generate any unimplemented instructions, notably `-m32 -march=RV32I`. 
+When you write your own software be sure to use these flags.The Makefile is fairly straight forward 
+to read and see how this works
 
 
 To build you need the ICEcube2 toolchain from Lattice Semiconductor installed.
@@ -33,7 +43,7 @@ There is a Data register located at 0x00030000, and a control register located a
 when it is clear the pin is an input. The following table shows how the bits are mapped
 to pins on the FPGA.
 
-||**GPIO BIT** | **PIN** ||
+|**GPIO BIT** | **PIN** |
 |:---|:--:|
 |0   |E2 |
 |1   |F3 |
