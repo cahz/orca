@@ -58,10 +58,11 @@ architecture rtl of wb_ram is
   constant BYTES_PER_WORD : integer := DATA_WIDTH/8;
 
   signal address : std_logic_vector(log2(SIZE/BYTES_PER_WORD)-1 downto 0);
+  signal write_en : std_logic;
 begin  -- architecture rtl
 
   address <= ADR_I(address'left+log2(BYTES_PER_WORD) downto log2(BYTES_PER_WORD));
-
+  write_en <= STB_I and we_i ;
   ram : component bram_lattice
     generic map (
       RAM_DEPTH      => SIZE/4,
@@ -70,7 +71,7 @@ begin  -- architecture rtl
       address  => address,
       clock    => CLK_I,
       data_in  => DAT_I,
-      we       => WE_I,
+      we       => write_en,
       be       => SEL_I,
       readdata => DAT_O);
 
