@@ -1,6 +1,16 @@
 #/usr/bin/python
 import sys
 
+###############################################
+# MIF files are documented at
+# http://quartushelp.altera.com/15.0/mergedProjects/reference/glossary/def_mif.htm
+#
+# This script parses a binary file and outputs a mif file that matches the
+# above format.
+###############################################
+
+
+
 HEADER =("WIDTH=32;\n"+
          "DEPTH=%d;\n"+
          "\n"+
@@ -9,7 +19,14 @@ HEADER =("WIDTH=32;\n"+
          "\n"+
          "CONTENT BEGIN\n");
 
+if (len(sys.argv) != 3):
+    sys.stderr.write("Usage %s FILE START_ADDRESS\n" % sys.argv[0])
+    sys.exit(-1)
+
+
 f=sys.argv[1]
+##zero the initializations until the address indicated
+## by start
 start = int(sys.argv[2],0)/4
 
 words=[]
