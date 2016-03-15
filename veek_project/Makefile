@@ -3,12 +3,14 @@
 QSYS_FILE=vblox1.qsys
 QPF_FILE=vblox1.qpf
 QIP_FILE=vblox1/synthesis/vblox1.qip
+SIP_FILE=vblox1/synthesis/vblox1.sip
 OUTPUT_DIR=output_files/
 MAP_RPT_FILE=$(OUTPUT_DIR)vblox1.map.rpt
 FIT_RPT_FILE=$(OUTPUT_DIR)vblox1.fit.rpt
 ASM_RPT_FILE=$(OUTPUT_DIR)vblox1.asm.rpt
 MIF_RPT_FILE=$(OUTPUT_DIR)vblox1.mif_update.rpt
 STA_RPT_FILE=$(OUTPUT_DIR)vblox1.sta.rpt
+
 all: vblox1.sof  $(STA_RPT_FILE)
 
 DEVICE_FAMILY=$(shell grep deviceFamily $(QSYS_FILE) | head -1 | sed 's/.*value="\(.*\)".*/\1/')
@@ -69,13 +71,22 @@ vblox1.sof: $(ASM_RPT_FILE)
 	cp $(OUTPUT_DIR)/$@ $@
 
 qip: $(QIP_FILE)
+sip: $(SIP_FILE)
 map: $(MAP_RPT_FILE)
 fit: $(FIT_RPT_FILE)
 mif: $(MIF_RPT_FILE)
 asm: $(ASM_RPT_FILE)
 sta: $(STA_RPT_FILE)
 
-.phony: all clean qip map fit mif asm sta pgm
+.phony: all clean qip map fit mif asm sta pgm testbench sim
+
+testbench: vblox1/testbench/mentor/msim_setup.tcl
+
+vblox1/testbench/mentor/msim_setup.tcl:$(QSYS_FILE) $(VHDL_FILES)
+	qsys-generate --testbench --testbench-simulation=VHDL $(QSYS_FILE)
+
+sim:vblox1/testbench/mentor/msim_setup.tcl
+	vsim -do simulate.tcl
 
 clean:
 	rm -rf vblox1/ $(OUTPUT_DIR)
