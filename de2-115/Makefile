@@ -1,21 +1,21 @@
 
 
-QSYS_FILE=vblox1.qsys
-QPF_FILE=vblox1.qpf
-QIP_FILE=vblox1/synthesis/vblox1.qip
-SIP_FILE=vblox1/synthesis/vblox1.sip
+QSYS_FILE=system.qsys
+QPF_FILE=system.qpf
+QIP_FILE=system/synthesis/system.qip
+SIP_FILE=system/synthesis/system.sip
 OUTPUT_DIR=output_files/
-MAP_RPT_FILE=$(OUTPUT_DIR)vblox1.map.rpt
-FIT_RPT_FILE=$(OUTPUT_DIR)vblox1.fit.rpt
-ASM_RPT_FILE=$(OUTPUT_DIR)vblox1.asm.rpt
-MIF_RPT_FILE=$(OUTPUT_DIR)vblox1.mif_update.rpt
-STA_RPT_FILE=$(OUTPUT_DIR)vblox1.sta.rpt
+MAP_RPT_FILE=$(OUTPUT_DIR)system.map.rpt
+FIT_RPT_FILE=$(OUTPUT_DIR)system.fit.rpt
+ASM_RPT_FILE=$(OUTPUT_DIR)system.asm.rpt
+MIF_RPT_FILE=$(OUTPUT_DIR)system.mif_update.rpt
+STA_RPT_FILE=$(OUTPUT_DIR)system.sta.rpt
 
-all: vblox1.sof  $(STA_RPT_FILE)
+all: system.sof  $(STA_RPT_FILE)
 
 DEVICE_FAMILY=$(shell grep deviceFamily $(QSYS_FILE) | head -1 | sed 's/.*value="\(.*\)".*/\1/')
 VHDL_FILES=$(wildcard ../*.vhd)
-VHDL_SUBMODULE_FILES=$(addprefix vblox1/synthesis/submodules/,$(notdir $(VHDL_FILES)))
+VHDL_SUBMODULE_FILES=$(addprefix system/synthesis/submodules/,$(notdir $(VHDL_FILES)))
 TOP_LEVEL_FILES=$(wildcard *.vhd)
 
 
@@ -49,9 +49,9 @@ ifdef FORWARD_ALU_ONLY
 endif
 
 $(QIP_FILE):$(QSYS_FILE)
-	qsys-generate --synthesis=VHDL vblox1.qsys 2>&1 | tee ./vblox1.qsys.log
+	qsys-generate --synthesis=VHDL system.qsys 2>&1 | tee ./system.qsys.log
 
-$(VHDL_SUBMODULE_FILES): vblox1/synthesis/submodules/% : ../%
+$(VHDL_SUBMODULE_FILES): system/synthesis/submodules/% : ../%
 	cp $^ $@
 
 HEX_FILE=$(wildcard test.hex)
@@ -67,29 +67,64 @@ $(MIF_RPT_FILE) : $(FIT_RPT_FILE) $(HEX_FILE)
 $(ASM_RPT_FILE) : $(MIF_RPT_FILE)
 	quartus_asm $(QPF_FILE)
 
-vblox1.sof: $(ASM_RPT_FILE)
+system.sof: $(ASM_RPT_FILE)
 	cp $(OUTPUT_DIR)/$@ $@
 
 qip: $(QIP_FILE)
-sip: $(SIP_FILE)
 map: $(MAP_RPT_FILE)
 fit: $(FIT_RPT_FILE)
 mif: $(MIF_RPT_FILE)
 asm: $(ASM_RPT_FILE)
 sta: $(STA_RPT_FILE)
 
-.phony: all clean qip map fit mif asm sta pgm testbench sim
+.phony: all clean qip map fit mif asm sta pgm testbench sim help
 
-testbench: vblox1/testbench/mentor/msim_setup.tcl
+testbench: system/testbench/mentor/msim_setup.tcl
 
-vblox1/testbench/mentor/msim_setup.tcl:$(QSYS_FILE) $(VHDL_FILES)
+system/testbench/mentor/msim_setup.tcl:$(QSYS_FILE) $(VHDL_FILES)
 	qsys-generate --testbench --testbench-simulation=VHDL $(QSYS_FILE)
 
-sim:vblox1/testbench/mentor/msim_setup.tcl
+sim:system/testbench/mentor/msim_setup.tcl test.hex
 	vsim -do simulate.tcl
 
 clean:
-	rm -rf vblox1/ $(OUTPUT_DIR)
-
-pgm: vblox1.sof
+	rm -rf system/ $(OUTPUT_DIR)
+	rm -rf db/ incremental_db/
+	rm -rf *.log system.sopcinfo
+	rm -rf system.sof .qsys_edit/
+pgm: system.sof
 	quartus_pgm -m JTAG -o P\;$^
+
+help:
+	@echo "Makefile Help:"
+	@echo "Targets:"
+	@echo
+	@echo "   all:"
+	@echo "     Build bitstream and run timing reports"
+	@echo
+	@echo "   qip:"
+	@echo "     Run qsys-generate"
+	@echo
+	@echo "   map:"
+	@echo "     Run sythesis"
+	@echo
+	@echo "   fit:"
+	@echo "     Run Place and Route"
+	@echo
+	@echo "   sta:"
+	@echo "     Run timing analysis"
+	@echo
+	@echo "   asm:"
+	@echo "     Assemble bitstream"
+	@echo
+	@echo "   clean:"
+	@echo "     Clean all outputs"
+	@echo
+	@echo "   testbench:"
+	@echo "     Generate testbench from qsys file"
+	@echo
+	@echo "   sim:"
+	@echo "     Run modelsim simulator"
+	@echo
+	@echo "   pgm:"
+	@echo "     Program the attached de2-115 board"

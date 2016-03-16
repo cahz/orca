@@ -1,11 +1,10 @@
-veek_project/vblox1/*
+de2-115/system/*
 sim/vblox1/*
-veek_project/db/*
+de2-115/db/*
 sim/db/*
-veek_project/output_files/*
-veek_project/incremental_db/*
+de2-115/output_files/*
+de2-115/incremental_db/*
 
-veek_project_bp*
 
 wishbone/cae_library/*
 ice40ultra/ice40ultra_Implmnt/*

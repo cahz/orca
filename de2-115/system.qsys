@@ -29,7 +29,7 @@
    {
       datum _sortIndex
       {
-         value = "6";
+         value = "5";
          type = "int";
       }
    }
@@ -45,7 +45,7 @@
    {
       datum _sortIndex
       {
-         value = "7";
+         value = "6";
          type = "int";
       }
    }
@@ -61,7 +61,7 @@
    {
       datum _sortIndex
       {
-         value = "8";
+         value = "7";
          type = "int";
       }
    }
@@ -77,7 +77,7 @@
    {
       datum _sortIndex
       {
-         value = "9";
+         value = "8";
          type = "int";
       }
    }
@@ -93,7 +93,7 @@
    {
       datum _sortIndex
       {
-         value = "11";
+         value = "10";
          type = "int";
       }
    }
@@ -109,7 +109,7 @@
    {
       datum _sortIndex
       {
-         value = "4";
+         value = "3";
          type = "int";
       }
    }
@@ -125,7 +125,7 @@
    {
       datum _sortIndex
       {
-         value = "5";
+         value = "4";
          type = "int";
       }
    }
@@ -141,7 +141,7 @@
    {
       datum _sortIndex
       {
-         value = "10";
+         value = "9";
          type = "int";
       }
    }
@@ -195,22 +195,6 @@
          type = "int";
       }
    }
-   element tohost_pio
-   {
-      datum _sortIndex
-      {
-         value = "3";
-         type = "int";
-      }
-   }
-   element tohost_pio.s1
-   {
-      datum baseAddress
-      {
-         value = "0";
-         type = "String";
-      }
-   }
 }
 ]]></parameter>
  <parameter name="clockCrossingAdapter" value="HANDSHAKE" />
@@ -225,7 +209,7 @@
  <parameter name="hideFromIPCatalog" value="false" />
  <parameter name="lockedInterfaceDefinition" value="" />
  <parameter name="maxAdditionalLatency" value="1" />
- <parameter name="projectName" value="vblox1.qpf" />
+ <parameter name="projectName" value="system.qpf" />
  <parameter name="sopcBorderPoints" value="false" />
  <parameter name="systemHash" value="0" />
  <parameter name="testBenchDutName" value="" />
@@ -274,6 +258,7 @@
    type="conduit"
    dir="end" />
  <interface name="reset" internal="clk_0.clk_in_reset" type="reset" dir="end" />
+ <interface name="to_host" internal="riscv_0.to_host" type="conduit" dir="end" />
  <module name="clk_0" kind="clock_source" version="15.0" enabled="1">
   <parameter name="clockFrequency" value="50000000" />
   <parameter name="clockFrequencyKnown" value="true" />
@@ -432,31 +417,17 @@
   <parameter name="useShallowMemBlocks" value="false" />
   <parameter name="writable" value="true" />
  </module>
- <module name="riscv_0" kind="riscv" version="1.0" enabled="1">
+ <module name="riscv_0" kind="vectorblox_orca" version="1.0" enabled="1">
   <parameter name="BRANCH_PREDICTION" value="false" />
-  <parameter name="BTB_SIZE" value="256" />
-  <parameter name="COUNTER_LENGTH" value="0" />
+  <parameter name="BTB_SIZE" value="0" />
+  <parameter name="COUNTER_LENGTH" value="64" />
   <parameter name="DIVIDE_ENABLE" value="0" />
   <parameter name="FORWARD_ALU_ONLY" value="1" />
   <parameter name="MULTIPLY_ENABLE" value="0" />
-  <parameter name="PIPELINE_STAGES" value="5" />
+  <parameter name="PIPELINE_STAGES" value="4" />
   <parameter name="REGISTER_SIZE" value="32" />
   <parameter name="RESET_VECTOR" value="512" />
-  <parameter name="SHIFTER_MAX_CYCLES" value="8" />
- </module>
- <module name="tohost_pio" kind="altera_avalon_pio" version="15.0" enabled="1">
-  <parameter name="bitClearingEdgeCapReg" value="false" />
-  <parameter name="bitModifyingOutReg" value="false" />
-  <parameter name="captureEdge" value="false" />
-  <parameter name="clockRate" value="50000000" />
-  <parameter name="direction" value="Input" />
-  <parameter name="edgeType" value="RISING" />
-  <parameter name="generateIRQ" value="false" />
-  <parameter name="irqType" value="LEVEL" />
-  <parameter name="resetValue" value="0" />
-  <parameter name="simDoTestBenchWiring" value="false" />
-  <parameter name="simDrivenValue" value="0" />
-  <parameter name="width" value="32" />
+  <parameter name="SHIFTER_MAX_CYCLES" value="32" />
  </module>
  <connection
    kind="avalon"
@@ -524,16 +495,6 @@
   <parameter name="baseAddress" value="0x0010" />
   <parameter name="defaultConnection" value="false" />
  </connection>
- <connection
-   kind="avalon"
-   version="15.0"
-   start="mm_bridge_0.m0"
-   end="tohost_pio.s1">
-  <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0000" />
-  <parameter name="defaultConnection" value="false" />
- </connection>
- <connection kind="clock" version="15.0" start="clk_0.clk" end="tohost_pio.clk" />
  <connection kind="clock" version="15.0" start="clk_0.clk" end="ledg.clk" />
  <connection kind="clock" version="15.0" start="clk_0.clk" end="ledr.clk" />
  <connection kind="clock" version="15.0" start="clk_0.clk" end="hex_0.clk" />
@@ -553,27 +514,6 @@
    start="clk_0.clk"
    end="onchip_memory2_0.clk2" />
  <connection kind="clock" version="15.0" start="clk_0.clk" end="riscv_0.clock" />
- <connection
-   kind="conduit"
-   version="15.0"
-   start="riscv_0.to_host"
-   end="tohost_pio.external_connection">
-  <parameter name="endPort" value="" />
-  <parameter name="endPortLSB" value="0" />
-  <parameter name="startPort" value="" />
-  <parameter name="startPortLSB" value="0" />
-  <parameter name="width" value="0" />
- </connection>
- <connection
-   kind="reset"
-   version="15.0"
-   start="clk_0.clk_reset"
-   end="riscv_0.reset" />
- <connection
-   kind="reset"
-   version="15.0"
-   start="clk_0.clk_reset"
-   end="tohost_pio.reset" />
  <connection kind="reset" version="15.0" start="clk_0.clk_reset" end="ledg.reset" />
  <connection kind="reset" version="15.0" start="clk_0.clk_reset" end="ledr.reset" />
  <connection kind="reset" version="15.0" start="clk_0.clk_reset" end="hex_0.reset" />
@@ -590,6 +530,11 @@
    version="15.0"
    start="clk_0.clk_reset"
    end="jtag_uart_0.reset" />
+ <connection
+   kind="reset"
+   version="15.0"
+   start="clk_0.clk_reset"
+   end="riscv_0.reset" />
  <connection
    kind="reset"
    version="15.0"

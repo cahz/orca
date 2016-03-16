@@ -5,7 +5,7 @@ library work;
 use work.rv_components.all;
 use work.utils.all;
 
-entity riscV is
+entity Orca is
 
   generic (
     REGISTER_SIZE      : integer              := 32;
@@ -51,9 +51,9 @@ entity riscV is
 
        );
 
-end entity riscV;
+end entity Orca;
 
-architecture rtl of riscV is
+architecture rtl of Orca is
   constant REGISTER_NAME_SIZE  : integer := 5;
   constant INSTRUCTION_SIZE    : integer := 32;
   constant SIGN_EXTENSION_SIZE : integer := 20;

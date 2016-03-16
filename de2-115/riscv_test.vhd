@@ -24,10 +24,12 @@ end entity riscv_test;
 
 architecture rtl of riscv_test is
 
-  component vblox1 is
+  component system is
     port (
+
       clk_clk                : in  std_logic                     := '0';  --             clk.clk
       from_host_export       : in  std_logic_vector(31 downto 0) := (others => '0');  --       from_host.export
+      to_host_export         : out std_logic_vector(31 downto 0);  --       from_host.export
       hex0_export            : out std_logic_vector(31 downto 0);  --            hex0.export
       hex1_export            : out std_logic_vector(31 downto 0);  --            hex1.export
       hex2_export            : out std_logic_vector(31 downto 0);  --            hex2.export
@@ -38,7 +40,7 @@ architecture rtl of riscv_test is
       reset_reset_n          : in  std_logic                     := '0'  --           reset.reset_n
 
       );
-  end component vblox1;
+  end component ;
 
 
   signal hex_input   : std_logic_vector(31 downto 0);
@@ -86,7 +88,7 @@ begin
 
   fh <= std_logic_vector(resize(signed(sw), fh'length));
 
-  rv : component vblox1
+  rv : component system
     port map (
       clk_clk                => clk,
       reset_reset_n          => reset,
@@ -103,11 +105,12 @@ begin
 
 --  hex_input(15 downto 0)  <= pc(15 downto 0);
 --  hex_input(31 downto 16) <= th(15 downto 0);
-  hex_input <= hex3_export when sw(3) = '1' else
-               hex2_export when sw(2) = '1' else
-               hex1_export when sw(1) = '1' else
-               hex0_export when sw(0) = '1' else
-               pc;
+  hex_input <=
+    hex3_export when sw(3) = '1' else
+    hex2_export when sw(2) = '1' else
+    hex1_export when sw(1) = '1' else
+    hex0_export when sw(0) = '1' else
+    pc;
 
   HEX0 <= seven_segment(hex_input(3 downto 0));
   HEX1 <= seven_segment(hex_input(7 downto 4));
