@@ -109,7 +109,7 @@ architecture rtl of Orca is
   signal branch_pred : std_logic_vector(REGISTER_SIZE*2 + 3-1 downto 0);
 begin  -- architecture rtl
   pipeline_flush      <= branch_get_flush(branch_pred);
-  coe_program_counter <= d_pc;
+  coe_program_counter <= instr_address;
 
   if_stall_in <= execute_stalled;
   instr_fetch : component instruction_fetch

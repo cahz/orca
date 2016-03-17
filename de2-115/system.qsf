@@ -308,6 +308,23 @@ set_location_assignment PIN_AH17 -to HEX7[3]
 set_location_assignment PIN_AF17 -to HEX7[4]
 set_location_assignment PIN_AG18 -to HEX7[5]
 set_location_assignment PIN_AA14 -to HEX7[6]
+
+set_location_assignment PIN_J10 -to EX_IO[0]
+set_location_assignment PIN_J14 -to EX_IO[1]
+set_location_assignment PIN_H13 -to EX_IO[2]
+set_location_assignment PIN_H14 -to EX_IO[3]
+set_location_assignment PIN_F14 -to EX_IO[4]
+set_location_assignment PIN_E10 -to EX_IO[5]
+set_location_assignment PIN_D9 -to EX_IO[6]
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to EX_IO[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to EX_IO[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to EX_IO[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to EX_IO[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to EX_IO[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to EX_IO[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to EX_IO[6]
+
 set_location_assignment PIN_B7 -to I2C_SCLK
 set_location_assignment PIN_A8 -to I2C_SDAT
 set_location_assignment PIN_M23 -to KEY[0]
