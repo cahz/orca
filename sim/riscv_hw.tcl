@@ -1,1 +1,0 @@
-../riscv_hw.tcl
