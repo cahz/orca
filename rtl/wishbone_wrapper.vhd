@@ -106,7 +106,7 @@ architecture rtl of riscV_wishbone is
 
 begin  -- architecture rtl
 
-  rv : component riscV
+  rv : component orca
     generic map (
       REGISTER_SIZE      => REGISTER_SIZE,
       RESET_VECTOR       => RESET_VECTOR,

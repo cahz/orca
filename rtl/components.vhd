@@ -6,7 +6,7 @@ library work;
 use work.utils.all;
 
 package rv_components is
-  component riscV is
+  component orca is
     generic (
       REGISTER_SIZE        : integer              := 32;
       RESET_VECTOR         : natural              := 16#00000200#;
@@ -51,7 +51,7 @@ package rv_components is
       avm_instruction_readdatavalid : in  std_logic                                  := '0'
 
       );
-  end component riscV;
+  end component orca;
 
   component decode is
     generic(
