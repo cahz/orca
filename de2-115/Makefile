@@ -14,7 +14,8 @@ STA_RPT_FILE=$(OUTPUT_DIR)system.sta.rpt
 all: system.sof  $(STA_RPT_FILE)
 
 DEVICE_FAMILY=$(shell grep deviceFamily $(QSYS_FILE) | head -1 | sed 's/.*value="\(.*\)".*/\1/')
-VHDL_FILES=$(wildcard ../*.vhd)
+VHDL_FILES=$(wildcard ../rtl/*.vhd)
+$(info VHDL_FILES=$(VHDL_FILES))
 VHDL_SUBMODULE_FILES=$(addprefix system/synthesis/submodules/,$(notdir $(VHDL_FILES)))
 TOP_LEVEL_FILES=$(wildcard *.vhd)
 
@@ -51,7 +52,7 @@ endif
 $(QIP_FILE):$(QSYS_FILE)
 	qsys-generate --synthesis=VHDL system.qsys 2>&1 | tee ./system.qsys.log
 
-$(VHDL_SUBMODULE_FILES): system/synthesis/submodules/% : ../%
+$(VHDL_SUBMODULE_FILES): system/synthesis/submodules/% : ../rtl/%
 	cp $^ $@
 
 HEX_FILE=$(wildcard test.hex)

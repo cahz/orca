@@ -35,9 +35,14 @@
    }
    element hex_0.s1
    {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
       datum baseAddress
       {
-         value = "48";
+         value = "16777264";
          type = "String";
       }
    }
@@ -51,9 +56,14 @@
    }
    element hex_1.s1
    {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
       datum baseAddress
       {
-         value = "64";
+         value = "16777280";
          type = "String";
       }
    }
@@ -67,9 +77,14 @@
    }
    element hex_2.s1
    {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
       datum baseAddress
       {
-         value = "80";
+         value = "16777296";
          type = "String";
       }
    }
@@ -83,9 +98,14 @@
    }
    element hex_3.s1
    {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
       datum baseAddress
       {
-         value = "96";
+         value = "16777312";
          type = "String";
       }
    }
@@ -93,15 +113,20 @@
    {
       datum _sortIndex
       {
-         value = "10";
+         value = "9";
          type = "int";
       }
    }
    element jtag_uart_0.avalon_jtag_slave
    {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
       datum baseAddress
       {
-         value = "112";
+         value = "16777328";
          type = "String";
       }
    }
@@ -115,9 +140,14 @@
    }
    element ledg.s1
    {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
       datum baseAddress
       {
-         value = "16";
+         value = "16777248";
          type = "String";
       }
    }
@@ -131,9 +161,14 @@
    }
    element ledr.s1
    {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
       datum baseAddress
       {
-         value = "32";
+         value = "16777232";
          type = "String";
       }
    }
@@ -141,12 +176,17 @@
    {
       datum _sortIndex
       {
-         value = "9";
+         value = "11";
          type = "int";
       }
    }
    element mm_bridge_0.s0
    {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
       datum baseAddress
       {
          value = "16777216";
@@ -187,12 +227,121 @@
          type = "String";
       }
    }
+   element pmod_mic_0
+   {
+      datum _sortIndex
+      {
+         value = "10";
+         type = "int";
+      }
+   }
+   element pmod_mic_0.s1
+   {
+      datum _lockedAddress
+      {
+         value = "0";
+         type = "boolean";
+      }
+      datum baseAddress
+      {
+         value = "256";
+         type = "String";
+      }
+   }
    element riscv_0
    {
       datum _sortIndex
       {
          value = "2";
          type = "int";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
       }
    }
 }
@@ -250,6 +399,11 @@
  <interface
    name="ledr"
    internal="ledr.external_connection"
+   type="conduit"
+   dir="end" />
+ <interface
+   name="pmod_mic"
+   internal="pmod_mic_0.conduit_end"
    type="conduit"
    dir="end" />
  <interface
@@ -381,11 +535,11 @@
   <parameter name="LINEWRAPBURSTS" value="0" />
   <parameter name="MAX_BURST_SIZE" value="1" />
   <parameter name="MAX_PENDING_RESPONSES" value="1" />
-  <parameter name="PIPELINE_COMMAND" value="1" />
-  <parameter name="PIPELINE_RESPONSE" value="1" />
+  <parameter name="PIPELINE_COMMAND" value="0" />
+  <parameter name="PIPELINE_RESPONSE" value="0" />
   <parameter name="SYMBOL_WIDTH" value="8" />
-  <parameter name="SYSINFO_ADDR_WIDTH" value="7" />
-  <parameter name="USE_AUTO_ADDRESS_WIDTH" value="1" />
+  <parameter name="SYSINFO_ADDR_WIDTH" value="9" />
+  <parameter name="USE_AUTO_ADDRESS_WIDTH" value="0" />
   <parameter name="USE_RESPONSE" value="0" />
  </module>
  <module
@@ -417,6 +571,11 @@
   <parameter name="useShallowMemBlocks" value="false" />
   <parameter name="writable" value="true" />
  </module>
+ <module name="pmod_mic_0" kind="pmod_mic" version="1.0" enabled="1">
+  <parameter name="CLK_FREQ_HZ" value="50000000" />
+  <parameter name="PORTS" value="1" />
+  <parameter name="SAMPLE_RATE_HZ" value="10000" />
+ </module>
  <module name="riscv_0" kind="vectorblox_orca" version="1.0" enabled="1">
   <parameter name="BRANCH_PREDICTION" value="false" />
   <parameter name="BTB_SIZE" value="0" />
@@ -427,7 +586,7 @@
   <parameter name="PIPELINE_STAGES" value="4" />
   <parameter name="REGISTER_SIZE" value="32" />
   <parameter name="RESET_VECTOR" value="512" />
-  <parameter name="SHIFTER_MAX_CYCLES" value="32" />
+  <parameter name="SHIFTER_MAX_CYCLES" value="1" />
  </module>
  <connection
    kind="avalon"
@@ -465,6 +624,15 @@
   <parameter name="baseAddress" value="0x0070" />
   <parameter name="defaultConnection" value="false" />
  </connection>
+ <connection
+   kind="avalon"
+   version="15.0"
+   start="mm_bridge_0.m0"
+   end="pmod_mic_0.s1">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0100" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
  <connection kind="avalon" version="15.0" start="mm_bridge_0.m0" end="hex_3.s1">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x0060" />
@@ -487,12 +655,12 @@
  </connection>
  <connection kind="avalon" version="15.0" start="mm_bridge_0.m0" end="ledr.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0020" />
+  <parameter name="baseAddress" value="0x0010" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection kind="avalon" version="15.0" start="mm_bridge_0.m0" end="ledg.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0010" />
+  <parameter name="baseAddress" value="0x0020" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection kind="clock" version="15.0" start="clk_0.clk" end="ledg.clk" />
@@ -501,8 +669,8 @@
  <connection kind="clock" version="15.0" start="clk_0.clk" end="hex_1.clk" />
  <connection kind="clock" version="15.0" start="clk_0.clk" end="hex_2.clk" />
  <connection kind="clock" version="15.0" start="clk_0.clk" end="hex_3.clk" />
- <connection kind="clock" version="15.0" start="clk_0.clk" end="mm_bridge_0.clk" />
  <connection kind="clock" version="15.0" start="clk_0.clk" end="jtag_uart_0.clk" />
+ <connection kind="clock" version="15.0" start="clk_0.clk" end="mm_bridge_0.clk" />
  <connection
    kind="clock"
    version="15.0"
@@ -514,6 +682,7 @@
    start="clk_0.clk"
    end="onchip_memory2_0.clk2" />
  <connection kind="clock" version="15.0" start="clk_0.clk" end="riscv_0.clock" />
+ <connection kind="clock" version="15.0" start="clk_0.clk" end="pmod_mic_0.clock" />
  <connection kind="reset" version="15.0" start="clk_0.clk_reset" end="ledg.reset" />
  <connection kind="reset" version="15.0" start="clk_0.clk_reset" end="ledr.reset" />
  <connection kind="reset" version="15.0" start="clk_0.clk_reset" end="hex_0.reset" />
@@ -524,17 +693,22 @@
    kind="reset"
    version="15.0"
    start="clk_0.clk_reset"
-   end="mm_bridge_0.reset" />
- <connection
-   kind="reset"
-   version="15.0"
-   start="clk_0.clk_reset"
    end="jtag_uart_0.reset" />
  <connection
    kind="reset"
    version="15.0"
    start="clk_0.clk_reset"
    end="riscv_0.reset" />
+ <connection
+   kind="reset"
+   version="15.0"
+   start="clk_0.clk_reset"
+   end="pmod_mic_0.reset" />
+ <connection
+   kind="reset"
+   version="15.0"
+   start="clk_0.clk_reset"
+   end="mm_bridge_0.reset" />
  <connection
    kind="reset"
    version="15.0"
