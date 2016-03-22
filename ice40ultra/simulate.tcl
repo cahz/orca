@@ -1,18 +1,18 @@
 
 proc com {} {
 	 set fileset [list \
-							../utils.vhd  \
-							../components.vhd 	  \
-							../alu.vhd 				  \
-							../branch_unit.vhd	  \
-							../decode.vhd 			  \
-							../execute.vhd			  \
-							../instruction_fetch.vhd\
-							../load_store_unit.vhd \
-							../register_file.vhd   \
-							../riscv.vhd 			  \
-							../sys_call.vhd 		  \
-							../wishbone_wrapper.vhd \
+							../rtl/utils.vhd  \
+							../rtl/components.vhd 	  \
+							../rtl/alu.vhd 				  \
+							../rtl/branch_unit.vhd	  \
+							../rtl/decode.vhd 			  \
+							../rtl/execute.vhd			  \
+							../rtl/instruction_fetch.vhd\
+							../rtl/load_store_unit.vhd \
+							../rtl/register_file.vhd   \
+							../rtl/orca.vhd 			  \
+							../rtl/sys_call.vhd 		  \
+							../rtl/wishbone_wrapper.vhd \
 							hdl/top_util_pkg.vhd \
 							hdl/top_component_pkg.vhd\
 							hdl/wb_ram.vhd 		  \

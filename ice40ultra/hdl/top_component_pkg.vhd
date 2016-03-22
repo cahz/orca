@@ -228,7 +228,7 @@ package top_component_pkg is
       DATA_O       : out std_logic_vector(DATA_WIDTH -1 downto 0);
       ERR_O        : out std_logic;
       RTY_O        : out std_logic;
-      input_output : out std_logic_vector(DATA_WIDTH -1 downto 0)
+      input_output : inout std_logic_vector(DATA_WIDTH -1 downto 0)
       );
   end component;
 
