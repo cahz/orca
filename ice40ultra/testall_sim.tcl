@@ -4,6 +4,8 @@ set files [lsort [glob ./test/*.mem]]
 
 foreach f $files {
 	 file copy -force $f test.mem
+	 exec touch test.mem
+	 exec make imem.mem dmem.mem
 	 restart -f
 	 onbreak {resume}
 	 when {sim:/top_tb/dut/rv/coe_to_host /= x"00000000" } {stop}
