@@ -18,7 +18,7 @@ entity load_store_unit is
     rs2_data       : in     std_logic_vector(REGISTER_SIZE-1 downto 0);
     instruction    : in     std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
     sign_extension : in     std_logic_vector(SIGN_EXTENSION_SIZE-1 downto 0);
-    waiting        : buffer std_logic;
+    stalled        : buffer std_logic;
     data_out       : out    std_logic_vector(REGISTER_SIZE-1 downto 0);
     data_enable    : out    std_logic;
     wb_sel         : out    std_logic_vector(4 downto 0);
@@ -72,7 +72,8 @@ architecture rtl of load_store_unit is
   signal re           : std_logic;
   signal we           : std_logic;
 
-  signal read_in_progress : std_logic;
+  signal expecting_data_valid :std_logic;
+
 begin
 
   --prepare memory signals
@@ -115,16 +116,25 @@ begin
   --align to word boundary
   address    <= address_unaligned(REGISTER_SIZE-1 downto 2) & "00";
 
-  waiting <= (waitrequest and (re or we));  -- and not (read_in_progress and not readvalid);
+  stalled <= (waitrequest and (re or we)) or (expecting_data_valid and not readvalid);  -- and not (read_in_progress and not readvalid);
 
 
   --outputs, all of these assignments should happen on the rising edge,
   -- they should only depend on latched signals
-  latched_inputs : process(clk, reset)
+  latched_inputs : process(clk)
   begin
     if rising_edge(clk) then
+
       alignment    <= address_unaligned(1 downto 0);
       latched_fun3 <= fun3;
+      if re ='1' and waitrequest='0' then
+        expecting_data_valid <= '1';
+      elsif expecting_data_valid = '1' and readvalid= '1' then
+        expecting_data_valid <= '0';
+      end if;
+    if reset = '1' then
+      expecting_data_valid <= '0';
+    end if;
     end if;
   end process;
 

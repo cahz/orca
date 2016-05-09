@@ -61,4 +61,8 @@ add wave -noupdate /top_tb/dut/rv/rv/X/valid_instr
 add wave -noupdate /top_tb/dut/rv/rv/X/pc_current
 add wave -noupdate /top_tb/dut/rv/rv/X/instruction
 
+proc rerun { t } {
+				restart -f;
+				run $t
+		  }
 set DefaultRadix hex

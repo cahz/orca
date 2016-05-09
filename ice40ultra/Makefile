@@ -23,7 +23,7 @@ BITFILE=$(OUTPUT_DIR)/sbt/outputs/bitmap/$(TOP_LEVEL_ENTITY)_bitmap.hex
 IMEM_LIST=imem.list
 DMEM_LIST=dmem.list
 MEM_FILE=test.mem
-HDL_FILES=$(wildcard hdl/*.vhd) $(wildcard hdl/*.v) $(wildcard ../*.vhd)
+HDL_FILES=$(wildcard hdl/*.vhd) $(wildcard hdl/*.v) $(wildcard ../rtl/*.vhd)
 all: build-software bit
 bit: $(BITFILE)
 

@@ -331,7 +331,7 @@ begin
       rs2_data       => rs2_data_fwd,
       instruction    => instruction,
       sign_extension => sign_extension,
-      waiting        => ls_unit_waiting,
+      stalled        => ls_unit_waiting,
       data_out       => ld_data_out,
       data_enable    => ld_data_en,
       --memory bus

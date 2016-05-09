@@ -156,8 +156,8 @@ begin  -- architecture rtl
   data_DAT_O             <= avm_data_writedata;
   data_WE_O              <= avm_data_write;
   data_SEL_O             <= avm_data_byteenable;
-  data_STB_O             <= (avm_data_write or avm_data_read) and not data_suppress_valid;
-  data_CYC_O             <= (avm_data_write or avm_data_read) and not data_suppress_valid;
+  data_STB_O             <= (avm_data_write or avm_data_read) ;--and not data_suppress_valid;
+  data_CYC_O             <= (avm_data_write or avm_data_read) ;--and not data_suppress_valid;
   data_CTI_O             <= CLASSIC_CYC;
   --input
   avm_data_readdata      <= data_saved_data when data_delayed_valid = '1' else data_DAT_I;

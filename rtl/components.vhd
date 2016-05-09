@@ -221,7 +221,7 @@ package rv_components is
       rs2_data       : in     std_logic_vector(REGISTER_SIZE-1 downto 0);
       instruction    : in     std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
       sign_extension : in     std_logic_vector(SIGN_EXTENSION_SIZE-1 downto 0);
-      waiting        : buffer std_logic;
+      stalled        : buffer std_logic;
       data_out       : out    std_logic_vector(REGISTER_SIZE-1 downto 0);
       data_enable    : out    std_logic;
 --memory-bus
