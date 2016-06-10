@@ -24,6 +24,9 @@ IMEM_LIST=imem.list
 DMEM_LIST=dmem.list
 MEM_FILE=test.mem
 HDL_FILES=$(wildcard hdl/*.vhd) $(wildcard hdl/*.v) $(wildcard ../rtl/*.vhd)
+
+
+
 all: build-software bit
 bit: $(BITFILE)
 
@@ -82,4 +85,8 @@ build-software:
 	make -C software FORMAT=mem
 	ln -sf software/*.mem $(MEM_FILE)
 
-.phony: syn all clean clean-all build-software bit
+PGM_CMD=$(ICECUBE2)/../../diamond/3.8_x64/bin/lin64/pgrcmd -infile
+pgm : $(BITFILE)
+	$(PGM_CMD) programmer.xcf
+
+.PHONY: syn all clean clean-all build-software bit pgm
