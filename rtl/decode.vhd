@@ -4,14 +4,12 @@ use IEEE.NUMERIC_STD.all;
 
 library work;
 use work.rv_components.all;
-
+use work.constants_pkg.all;
 entity decode is
   generic(
     REGISTER_SIZE       : positive;
-    REGISTER_NAME_SIZE  : positive;
-    INSTRUCTION_SIZE    : positive;
     SIGN_EXTENSION_SIZE : positive;
-    PIPELINE_STAGES : natural range 1 to 2);
+    PIPELINE_STAGES     : natural range 1 to 2);
   port(
     clk   : in std_logic;
     reset : in std_logic;
@@ -24,6 +22,7 @@ entity decode is
     wb_sel      : in std_logic_vector(REGISTER_NAME_SIZE -1 downto 0);
     wb_data     : in std_logic_vector(REGISTER_SIZE -1 downto 0);
     wb_enable   : in std_logic;
+    wb_valid    : in std_logic;
 
     --output signals
     rs1_data       : out    std_logic_vector(REGISTER_SIZE -1 downto 0);
@@ -36,13 +35,12 @@ entity decode is
     pc_curr_out    : out    std_logic_vector(REGISTER_SIZE-1 downto 0);
     instr_out      : buffer std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
     subseq_instr   : out    std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
-    valid_output   : out    std_logic);
-
-
+    subseq_valid   : out    std_logic;
+    valid_output   : out    std_logic;
+    decode_flushed : out    std_logic);
 end;
 
 architecture rtl of decode is
-
   signal rs1   : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0);
   signal rs2   : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0);
   signal rs1_p : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0);
@@ -68,35 +66,32 @@ architecture rtl of decode is
   signal il_rs1    : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0);
   signal il_rs2    : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0);
   signal il_opcode : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0);
-
-
 begin
-
 
   register_file_1 : component register_file
     generic map (
       REGISTER_SIZE      => REGISTER_SIZE,
       REGISTER_NAME_SIZE => REGISTER_NAME_SIZE)
     port map(
-      clk              => clk,
-      stall            => stall,
-      valid_input      => valid_input,
-      rs1_sel          => rs1,
-      rs2_sel          => rs2,
-      writeback_sel    => wb_sel,
-      writeback_data   => wb_data,
-      writeback_enable => wb_enable,
-      rs1_data         => rs1_reg,
-      rs2_data         => rs2_reg
+      clk         => clk,
+      valid_input => valid_input,
+      rs1_sel     => rs1,
+      rs2_sel     => rs2,
+      wb_sel      => wb_sel,
+      wb_data     => wb_data,
+      wb_enable   => wb_enable,
+      wb_valid    => wb_valid,
+      rs1_data    => rs1_reg,
+      rs2_data    => rs2_reg
       );
   two_cycle : if PIPELINE_STAGES = 2 generate
-    rs1 <= instruction(19 downto 15) when stall = '0' else instr_latch(19 downto 15);
-    rs2 <= instruction(24 downto 20) when stall = '0' else instr_latch(24 downto 20);
+    rs1 <= instruction(REGISTER_RS1'range) when stall = '0' else instr_latch(REGISTER_RS1'range);
+    rs2 <= instruction(REGISTER_RS2'range) when stall = '0' else instr_latch(REGISTER_RS2'range);
 
-    rs1_p <= instr_latch(19 downto 15) when stall = '0' else instr_out(19 downto 15);
-    rs2_p <= instr_latch(24 downto 20) when stall = '0' else instr_out(24 downto 20);
+    rs1_p <= instr_latch(REGISTER_RS1'range) when stall = '0' else instr_out(REGISTER_RS1'range);
+    rs2_p <= instr_latch(REGISTER_RS2'range) when stall = '0' else instr_out(REGISTER_RS2'range);
 
-
+    decode_flushed <= not (valid_input or valid_latch);
 
     decode_stage : process (clk, reset) is
     begin  -- process decode_stage
@@ -117,12 +112,12 @@ begin
 
         end if;
 
-        if wb_sel = rs1_p and wb_enable = '1' then
+        if wb_sel = rs1_p and wb_enable = '1' and wb_valid = '1' then
           outreg1 <= wb_data;
         elsif stall = '0' then
           outreg1 <= rs1_reg;
         end if;
-        if wb_sel = rs2_p and wb_enable = '1' then
+        if wb_sel = rs2_p and wb_enable = '1' and wb_valid = '1' then
           outreg2 <= wb_data;
         elsif stall = '0' then
           outreg2 <= rs2_reg;
@@ -135,9 +130,9 @@ begin
       end if;
     end process decode_stage;
     subseq_instr <= instr_latch;
-
-    rs1_data  <= outreg1;
-    rs2_data  <= outreg2;
+    subseq_valid <= valid_latch;
+    rs1_data     <= outreg1;
+    rs2_data     <= outreg2;
   end generate two_cycle;
 
 
@@ -145,7 +140,7 @@ begin
     rs1 <= instruction(19 downto 15) when stall = '0' else instr_out(19 downto 15);
     rs2 <= instruction(24 downto 20) when stall = '0' else instr_out(24 downto 20);
 
-
+    decode_flushed <= not valid_input;
     decode_stage : process (clk, reset) is
     begin  -- process decode_stage
       if rising_edge(clk) then          -- rising clock edge
@@ -166,8 +161,9 @@ begin
       end if;
     end process decode_stage;
     subseq_instr <= instruction;
-    rs1_data  <= rs1_reg;
-    rs2_data  <= rs2_reg;
+    subseq_valid <= valid_input;
+    rs1_data     <= rs1_reg;
+    rs2_data     <= rs2_reg;
   end generate one_cycle;
 
 end architecture;

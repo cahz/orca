@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use IEEE.NUMERIC_STD.all;
+use work.constants_pkg.all;
 --use IEEE.std_logic_arith.all;
 
 entity branch_unit is
@@ -8,7 +9,6 @@ entity branch_unit is
 
   generic (
     REGISTER_SIZE       : integer;
-    INSTRUCTION_SIZE    : integer;
     SIGN_EXTENSION_SIZE : integer);
 
   port (
@@ -39,18 +39,6 @@ architecture latch_middle of branch_unit is
 
   constant OP_IMM_IMMEDIATE_SIZE : integer := 12;
 
-  --op codes
-  constant JAL    : std_logic_vector(6 downto 0) := "1101111";
-  constant JALR   : std_logic_vector(6 downto 0) := "1100111";
-  constant BRANCH : std_logic_vector(6 downto 0) := "1100011";
-
-  --func3
-  constant BEQ  : std_logic_vector(2 downto 0) := "000";
-  constant BNE  : std_logic_vector(2 downto 0) := "001";
-  constant BLT  : std_logic_vector(2 downto 0) := "100";
-  constant BGE  : std_logic_vector(2 downto 0) := "101";
-  constant BLTU : std_logic_vector(2 downto 0) := "110";
-  constant BGEU : std_logic_vector(2 downto 0) := "111";
 
 
   --these are one bit larget than a register
@@ -73,7 +61,7 @@ architecture latch_middle of branch_unit is
 
   signal branch_taken : std_logic;
 
-  alias func3  : std_logic_vector(2 downto 0) is instr(14 downto 12);
+  alias func3  : std_logic_vector(2 downto 0) is instr(INSTR_FUNC3'range);
   alias opcode : std_logic_vector(6 downto 0) is instr(6 downto 0);
 
   signal valid_branch_instr : std_logic;
@@ -84,16 +72,16 @@ architecture latch_middle of branch_unit is
   signal data_en_latch      : std_logic;
 
   signal branch_taken_or_jump : std_logic;
-  signal jal_op               : std_logic;
-  signal jalr_op              : std_logic;
-  signal br_op                : std_logic;
+  signal is_jal_op               : std_logic;
+  signal is_jalr_op              : std_logic;
+  signal is_br_op                : std_logic;
 begin  -- architecture
 
 
   with func3 select
     msb_mask <=
-    '0' when BLTU,
-    '0' when BGEU,
+    '0' when BLTU_OP,
+    '0' when BGEU_OP,
     '1' when others;
 
 
@@ -107,12 +95,12 @@ begin  -- architecture
 
   with func3 select
     branch_taken <=
-    eq_flg                 when beq,
-    not eq_flg             when bne,
-    leq_flg and not eq_flg when blt,
-    not leq_flg or eq_flg  when bge,
-    leq_flg and not eq_flg when bltu,
-    not leq_flg or eq_flg  when bgeu,
+    eq_flg                 when beq_OP,
+    not eq_flg             when bne_OP,
+    leq_flg and not eq_flg when blt_OP,
+    not leq_flg or eq_flg  when bge_OP,
+    leq_flg and not eq_flg when bltu_OP,
+    not leq_flg or eq_flg  when bgeu_OP,
     '0'                    when others;
 
   b_imm <= unsigned(sign_extension(REGISTER_SIZE-13 downto 0) &
@@ -130,9 +118,9 @@ begin  -- architecture
 
   with opcode select
     target_pc <=
-    jalr_target    when JALR,
-    jal_target     when JAL,
-    branch_target  when BRANCH,
+    jalr_target    when JALR_OP,
+    jal_target     when JAL_OP,
+    branch_target  when BRANCH_OP,
     nbranch_target when others;
 
 
@@ -149,13 +137,13 @@ begin  -- architecture
           target_pc_latch    <= target_pc;
           branch_taken_latch <= branch_taken;
 
-          jal_op  <= '0';
-          jalr_op <= '0';
-          br_op   <= '0';
+          is_jal_op  <= '0';
+          is_jalr_op <= '0';
+          is_br_op   <= '0';
 
-          if opcode = JAL then jal_op   <= '1'; end if;
-          if opcode = JALR then jalr_op <= '1'; end if;
-          if opcode = BRANCH then br_op <= '1'; end if;
+          if opcode = JAL_OP then    is_jal_op   <= '1'; end if;
+          if opcode = JALR_OP then   is_jalr_op <= '1'; end if;
+          if opcode = BRANCH_OP then is_br_op <= '1'; end if;
 
           nbranch_latch <= nbranch_target;
         end if;
@@ -164,12 +152,12 @@ begin  -- architecture
   end process;
 
 
-  data_out_en <= valid_branch_instr and (jal_op or jalr_op);
+  data_out_en <= valid_branch_instr and (is_jal_op or is_jalr_op);
 
-  branch_taken_or_jump <= (branch_taken_latch and br_op) or jal_op or jalr_op;
+  branch_taken_or_jump <= (branch_taken_latch and is_br_op) or is_jal_op or is_jalr_op;
   br_taken_out         <= valid_branch_instr and branch_taken_or_jump;
-  bad_predict          <= valid_branch_instr when br_taken_latch /= branch_taken_or_jump or jalr_op = '1' else '0';
-  is_branch            <= valid_branch_instr when jal_op = '1' or br_op = '1'                             else '0';
+  bad_predict          <= valid_branch_instr when br_taken_latch /= branch_taken_or_jump or is_jalr_op = '1' else '0';
+  is_branch            <= valid_branch_instr when is_jal_op = '1' or is_br_op = '1'                             else '0';
 
   new_pc   <= std_logic_vector(target_pc_latch) when branch_taken_or_jump = '1' else std_logic_vector(nbranch_latch);
   data_out <= std_logic_vector(nbranch_latch);

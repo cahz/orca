@@ -52,7 +52,8 @@ with open(f) as ff:
 
 print HEADER %depth
 
-print "[0..%x] : 0;" % (start-1)
+if start != 0:
+  print "[0..%x] : 0;" % (start-1)
 
 for i,w in enumerate(words):
     print "\t%x : %x;" %(i+start,w)

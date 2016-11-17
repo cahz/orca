@@ -2,18 +2,19 @@ library ieee;
 use ieee.std_logic_1164.all;
 use IEEE.NUMERIC_STD.all;
 library work;
+use work.constants_pkg.all;
 
 
 entity load_store_unit is
   generic (
     REGISTER_SIZE       : integer;
-    SIGN_EXTENSION_SIZE : integer;
-    INSTRUCTION_SIZE    : integer);
+    SIGN_EXTENSION_SIZE : integer);
 
   port (
     clk            : in     std_logic;
     reset          : in     std_logic;
     valid          : in     std_logic;
+    stall_to_lsu   : in     std_logic;
     rs1_data       : in     std_logic_vector(REGISTER_SIZE-1 downto 0);
     rs2_data       : in     std_logic_vector(REGISTER_SIZE-1 downto 0);
     instruction    : in     std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
@@ -21,16 +22,14 @@ entity load_store_unit is
     stalled        : buffer std_logic;
     data_out       : out    std_logic_vector(REGISTER_SIZE-1 downto 0);
     data_enable    : out    std_logic;
-    wb_sel         : out    std_logic_vector(4 downto 0);
 --memory-bus
     address        : out    std_logic_vector(REGISTER_SIZE-1 downto 0);
     byte_en        : out    std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
-    write_en       : out    std_logic;
-    read_en        : out    std_logic;
+    write_en       : buffer std_logic;
+    read_en        : buffer std_logic;
     write_data     : out    std_logic_vector(REGISTER_SIZE-1 downto 0);
     read_data      : in     std_logic_vector(REGISTER_SIZE-1 downto 0);
-    waitrequest    : in     std_logic;
-    readvalid      : in     std_logic);
+    ack            : in     std_logic);
 
 end entity load_store_unit;
 
@@ -54,7 +53,6 @@ architecture rtl of load_store_unit is
   signal imm          : std_logic_vector(11 downto 0);
 
   signal address_unaligned : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal latched_address   : std_logic_vector(REGISTER_SIZE-1 downto 0);
   signal alignment         : std_logic_vector(1 downto 0);
 
   signal w0 : std_logic_vector(7 downto 0);
@@ -69,21 +67,23 @@ architecture rtl of load_store_unit is
   signal r3           : std_logic_vector(7 downto 0);
   signal fixed_data   : std_logic_vector(REGISTER_SIZE-1 downto 0);
   signal latched_data : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal re           : std_logic;
-  signal we           : std_logic;
 
-  signal expecting_data_valid :std_logic;
-
+  signal expecting_r_ack : std_logic;
+  signal expecting_w_ack : std_logic;
+  signal expecting_ack   : std_logic;
+  signal write_instr     : boolean;
+  signal read_instr      : boolean;
 begin
 
   --prepare memory signals
   opcode <= instruction(6 downto 0);
   fun3   <= instruction(14 downto 12);
 
-  we       <= '1' when opcode = STORE_INSTR and valid = '1'else '0';
-  re       <= '1' when opcode = LOAD_INSTR and valid = '1' else '0';
-  write_en <= we;
-  read_en  <= re;
+  write_instr <= opcode = STORE_INSTR and valid = '1';
+  read_instr  <= opcode = LOAD_INSTR and valid = '1';
+
+  write_en <= valid when write_instr and stall_to_lsu = '0' else '0';
+  read_en  <= valid when read_instr and stall_to_lsu = '0'  else '0';
 
   imm <= instruction(31 downto 25) & instruction(11 downto 7) when instruction(5) = '1'
          else instruction(31 downto 20);
@@ -116,25 +116,38 @@ begin
   --align to word boundary
   address    <= address_unaligned(REGISTER_SIZE-1 downto 2) & "00";
 
-  stalled <= (waitrequest and (re or we)) or (expecting_data_valid and not readvalid);  -- and not (read_in_progress and not readvalid);
+  stalled <= '1' when ((expecting_r_ack and not ack) = '1') or ((expecting_w_ack and not ack) = '1' and (read_instr or write_instr)) else '0';
 
+  expecting_ack <= expecting_r_ack or expecting_w_ack;
 
   --outputs, all of these assignments should happen on the rising edge,
   -- they should only depend on latched signals
   latched_inputs : process(clk)
   begin
     if rising_edge(clk) then
-
-      alignment    <= address_unaligned(1 downto 0);
-      latched_fun3 <= fun3;
-      if re ='1' and waitrequest='0' then
-        expecting_data_valid <= '1';
-      elsif expecting_data_valid = '1' and readvalid= '1' then
-        expecting_data_valid <= '0';
+      --expecting w ack
+      if expecting_ack = '0' or ack = '1' then
+        alignment    <= address_unaligned(1 downto 0);
+        latched_fun3 <= fun3;
       end if;
-    if reset = '1' then
-      expecting_data_valid <= '0';
-    end if;
+      if expecting_r_ack = '1' and ack = '1' then
+        expecting_r_ack <= '0';
+      end if;
+      if read_en = '1' then
+        expecting_r_ack <= '1';
+      end if;
+      --expecting w ack
+      if expecting_w_ack = '1' and ack = '1'  then
+        expecting_w_ack <= '0';
+      end if;
+      if write_en = '1' then
+        expecting_w_ack <= '1';
+      end if;
+
+      if reset = '1' then
+        expecting_r_ack <= '0';
+        expecting_w_ack <= '0';
+      end if;
     end if;
   end process;
 
@@ -157,7 +170,7 @@ begin
     x"0000"&r1 & r0                                          when UHALF_SIZE,
     r3 &r2 & r1 & r0                                         when others;
 
-  data_enable <= readvalid;
+  data_enable <= ack and expecting_r_ack;
   data_out    <= fixed_data;
 
 end architecture;

@@ -1,12 +1,4 @@
-de2-115/system/*
-sim/vblox1/*
-de2-115/db/*
-sim/db/*
-de2-115/output_files/*
-de2-115/incremental_db/*
-
-
-wishbone/cae_library/*
-ice40ultra/ice40ultra_Implmnt/*
-ice40ultra/init_*.imem
-*/test/*
+*.sopcinfo
+transcript
+*.elf
+*.dump

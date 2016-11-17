@@ -39,9 +39,23 @@ package utils is
   function branch_get_enable (
     sig : std_logic_vector)
     return std_logic;
+  function bool_to_int (
+    signal a : std_logic)
+    return integer ;
 
 end utils;
 package body utils is
+  function bool_to_int (
+    signal a : std_logic)
+    return integer is
+  begin  -- function bool_to_int
+    if a = '1' then
+      return 1;
+    end if;
+    return 0;
+  end function bool_to_int;
+
+
   function log2_f(
     N : integer)
     return integer is

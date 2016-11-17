@@ -28,15 +28,12 @@ architecture rtl of riscv_test is
     port (
 
       clk_clk                : in  std_logic                     := '0';  --             clk.clk
-      from_host_export       : in  std_logic_vector(31 downto 0) := (others => '0');  --       from_host.export
-      to_host_export         : out std_logic_vector(31 downto 0);  --       from_host.export
       hex0_export            : out std_logic_vector(31 downto 0);  --            hex0.export
       hex1_export            : out std_logic_vector(31 downto 0);  --            hex1.export
       hex2_export            : out std_logic_vector(31 downto 0);  --            hex2.export
       hex3_export            : out std_logic_vector(31 downto 0);  --            hex3.export
       ledg_export            : out std_logic_vector(31 downto 0);  --            ledg.export
       ledr_export            : out std_logic_vector(31 downto 0);  --            ledr.export
-      program_counter_export : out std_logic_vector(31 downto 0);  -- program_counter.export
       reset_reset_n          : in  std_logic                     := '0'  --           reset.reset_n
 
       );
@@ -44,9 +41,6 @@ architecture rtl of riscv_test is
 
 
   signal hex_input   : std_logic_vector(31 downto 0);
-  signal pc          : std_logic_vector(31 downto 0);
-  signal th          : std_logic_vector(31 downto 0);
-  signal fh          : std_logic_vector(31 downto 0);
   signal clk         : std_logic;
   signal reset       : std_logic;
   signal ledg_export : std_logic_vector(31 downto 0);
@@ -86,14 +80,10 @@ begin
   clk   <= clock_50;
   reset <= key(1);
 
-  fh <= std_logic_vector(resize(signed(sw), fh'length));
-
   rv : component system
     port map (
       clk_clk                => clk,
       reset_reset_n          => reset,
-      from_host_export       => fh,
-      program_counter_export => pc,
       ledg_export            => ledg_export,
       ledr_export            => ledr_export,
       hex3_export            => hex3_export,
@@ -102,15 +92,15 @@ begin
       hex0_export            => hex0_export);
 
 
-
 --  hex_input(15 downto 0)  <= pc(15 downto 0);
 --  hex_input(31 downto 16) <= th(15 downto 0);
+  
   hex_input <=
     hex3_export when sw(3) = '1' else
     hex2_export when sw(2) = '1' else
     hex1_export when sw(1) = '1' else
     hex0_export when sw(0) = '1' else
-    pc;
+    (others => '0');
 
   HEX0 <= seven_segment(hex_input(3 downto 0));
   HEX1 <= seven_segment(hex_input(7 downto 4));

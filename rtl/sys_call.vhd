@@ -1,433 +1,321 @@
-library IEEE;
-use IEEE.STD_LOGIC_1164.all;
-use IEEE.NUMERIC_STD.all;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.constants_pkg.all;
+
 entity instruction_legal is
   generic (
-    INSTRUCTION_SIZE         : positive;
     CHECK_LEGAL_INSTRUCTIONS : boolean);
   port (
-    instruction   : in  std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
-    other_illegal : in  std_logic;
-    legal         : out std_logic);
+    instruction : in  std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
+    legal       : out std_logic);
 end entity;
 
 architecture rtl of instruction_legal is
   alias opcode7 is instruction(6 downto 0);
-  alias func3 is instruction(14 downto 12);
+  alias func3 is instruction(INSTR_FUNC3'range);
+  alias func7 is instruction(31 downto 25);
+  alias csr_num is instruction(SYSTEM_MINOR_OP'range);
 begin
 
   legal <=
-    not other_illegal when (CHECK_LEGAL_INSTRUCTIONS = false or
-                            opcode7 = "0110111" or
-                            opcode7 = "0010111" or
-                            opcode7 = "1101111" or
-                            (opcode7 = "1100111" and func3 = "000") or
-                            (opcode7 = "1100011" and func3 /= "010" and func3 /= "011") or
-                            (opcode7 = "0000011" and func3 /= "011" and func3 /= "110" and func3 /= "111") or
-                            (opcode7 = "0100011" and (func3 = "000" or func3 = "001" or func3 = "010")) or
-                            opcode7 = "0010011" or
-                            opcode7 = "0110011" or
-                            (opcode7 = "0001111" and instruction(31 downto 28)& instruction(19 downto 13) &instruction(11 downto 7) = x"0000") or
-                            opcode7 = "1110011") else '0';
+    '1' when (CHECK_LEGAL_INSTRUCTIONS = false or
+              opcode7 = LUI_OP or
+              opcode7 = AUIPC_OP or
+              opcode7 = JAL_OP or
+              (opcode7 = JALR_OP and func3 = "000") or
+              (opcode7 = BRANCH_OP and func3 /= "010" and func3 /= "011") or
+              (opcode7 = LOAD_OP and func3 /= "011" and func3 /= "110" and func3 /= "111") or
+              (opcode7 = STORE_OP and (func3 = "000" or func3 = "001" or func3 = "010")) or
+              opcode7 = ALUI_OP or      --Does not catch illegal
+                                        --shift amountes
+              (opcode7 = ALU_OP and (func7 = ALU_F7 or func7 = MUL_F7 or func7 = SUB_F7))or
+              (opcode7 = FENCE_OP) or   --all fence ops are treated as legal
+              (opcode7 = SYSTEM_OP and csr_num /= SYSTEM_ECALL and csr_num /= SYSTEM_EBREAK) or
+              opcode7 = LVE_OP) else '0';
 
 end architecture;
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.constants_pkg.all;
 
 entity system_calls is
 
   generic (
-    REGISTER_SIZE    : natural;
-    INSTRUCTION_SIZE : natural;
-    RESET_VECTOR     : natural;
-    COUNTER_LENGTH   : natural);
+    REGISTER_SIZE     : natural;
+    RESET_VECTOR      : integer;
+    ENABLE_EXCEPTIONS : boolean := true;
+    COUNTER_LENGTH    : natural);
 
   port (
     clk         : in std_logic;
     reset       : in std_logic;
     valid       : in std_logic;
+    stall_in    : in std_logic;
     rs1_data    : in std_logic_vector(REGISTER_SIZE-1 downto 0);
     instruction : in std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
 
-    finished_instr : in std_logic;
+    wb_data   : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    wb_enable : out std_logic;
 
-    wb_data : out std_logic_vector(REGISTER_SIZE-1 downto 0);
-    wb_en   : out std_logic;
-
-    to_host       : out    std_logic_vector(REGISTER_SIZE-1 downto 0);
-    from_host     : in     std_logic_vector(REGISTER_SIZE-1 downto 0);
     current_pc    : in     std_logic_vector(REGISTER_SIZE-1 downto 0);
     pc_correction : out    std_logic_vector(REGISTER_SIZE -1 downto 0);
     pc_corr_en    : buffer std_logic;
 
-    illegal_alu_instr : in std_logic;
 
-    use_after_load_stall : in std_logic;
-    predict_corr         : in std_logic;
-    load_stall           : in std_logic);
+    -- To the Instruction Fetch Stage
+    interrupt_pending   : buffer std_logic;
+    external_interrupts : in     std_logic_vector(REGISTER_SIZE-1 downto 0);
+    -- Signals when an interrupt may proceed.
+    pipeline_empty      : in     std_logic;
+
+    -- These signals are used to tell the interrupt handler which instruction
+    -- to return to upon exit. They are sourced from the instruction fetch
+    -- stage of the processor.
+    instruction_fetch_pc : in std_logic_vector(REGISTER_SIZE-1 downto 0);
+
+    br_bad_predict : in std_logic;
+    br_new_pc      : in std_logic_vector(REGISTER_SIZE-1 downto 0));
 
 end entity system_calls;
 
 architecture rtl of system_calls is
 
-  alias csr     : std_logic_vector(11 downto 0) is instruction(31 downto 20);
-  alias source  : std_logic_vector(4 downto 0) is instruction(19 downto 15);
-  alias zimm    : std_logic_vector(4 downto 0) is instruction(19 downto 15);
-  alias func3   : std_logic_vector(2 downto 0) is instruction(14 downto 12);
-  alias dest    : std_logic_vector(4 downto 0) is instruction(11 downto 7);
-  alias opcode  : std_logic_vector(4 downto 0) is instruction(6 downto 2);
-  alias opcode7 : std_logic_vector(6 downto 0) is instruction(6 downto 0);
-  alias func7   : std_logic_vector(6 downto 0) is instruction(31 downto 25);
 
-  signal legal_instruction : std_logic;
-
-  signal cycles        : unsigned(63 downto 0);
-  signal instr_retired : unsigned(63 downto 0);
-
-  --if INCLUDE_EXTRA_COUNTERS is enabled, then
-  constant INCLUDE_EXTRA_COUNTERS : boolean := false;
-
-  constant CHECK_LEGAL_INSTRUCTIONS : boolean := true;
-  signal use_after_load_stalls      : unsigned(31 downto 0);
-  signal jal_instructions           : unsigned(31 downto 0);
-  signal jalr_instructions          : unsigned(31 downto 0);
-  signal branch_mispredicts         : unsigned(31 downto 0);
-  signal other_flush                : unsigned(31 downto 0);
-  signal load_stalls                : unsigned(31 downto 0);
-
-  signal mstatus_ie : std_logic;
-  constant mtvec    : std_logic_vector(REGISTER_SIZE-1 downto 0) := x"00000200";
-  signal mtime      : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal mtimeh     : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal instret    : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal instreth   : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal mip        : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal mie        : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal mip_msip   : std_logic;
-  signal mip_mtip   : std_logic;
-  signal mie_msie   : std_logic;
-  signal mie_mtie   : std_logic;
-
-  signal mepc      : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal mcause    : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal mcause_i  : std_logic;
-  signal mcause_ex : std_logic_vector(3 downto 0);
-  signal mtohost   : std_logic_vector(REGISTER_SIZE-1 downto 0);
-
-  signal mstatus : std_logic_vector(REGISTER_SIZE-1 downto 0);
-
-  subtype csr_t is std_logic_vector(11 downto 0);
-                                        --CSR constants
-                                        --USER
-  constant CSR_CYCLE     : csr_t := x"C00";
-  constant CSR_TIME      : csr_t := x"C01";
-  constant CSR_INSTRET   : csr_t := x"C02";
-  constant CSR_CYCLEH    : csr_t := x"C80";
-  constant CSR_TIMEH     : csr_t := x"C81";
-  constant CSR_INSTRETH  : csr_t := x"C82";
-                                        --MACHINE
-  constant CSR_MCPUID    : csr_t := X"F00";
-  constant CSR_MIMPID    : csr_t := X"F01";
-  constant CSR_MHARTID   : csr_t := X"F10";
-  constant CSR_MSTATUS   : csr_t := X"300";
-  constant CSR_MTVEC     : csr_t := X"301";
-  constant CSR_MTDELEG   : csr_t := X"302";
-  constant CSR_MIE       : csr_t := X"304";
-  constant CSR_MTIMECMP  : csr_t := X"321";
-  constant CSR_MTIME     : csr_t := X"701";
-  constant CSR_MTIMEH    : csr_t := X"741";
-  constant CSR_MSCRATCH  : csr_t := X"340";
-  constant CSR_MEPC      : csr_t := X"341";
-  constant CSR_MCAUSE    : csr_t := X"342";
-  constant CSR_MBADADDR  : csr_t := X"343";
-  constant CSR_MIP       : csr_t := X"344";
-  constant CSR_MBASE     : csr_t := X"380";
-  constant CSR_MBOUND    : csr_t := X"381";
-  constant CSR_MIBASE    : csr_t := X"382";
-  constant CSR_MIBOUND   : csr_t := X"383";
-  constant CSR_MDBASE    : csr_t := X"384";
-  constant CSR_MDBOUND   : csr_t := X"385";
-  constant CSR_HTIMEW    : csr_t := X"B01";
-  constant CSR_HTIMEHW   : csr_t := X"B81";
-  constant CSR_MTOHOST   : csr_t := X"780";
-  constant CSR_MFROMHOST : csr_t := X"781";
-
-  constant FENCE_I     : std_logic_vector(31 downto 0) := x"0000100F";
-  -- EXECPTION CODES
-  constant ILLEGAL_I   : std_logic_vector(3 downto 0)  := x"2";
-  constant MMODE_ECALL : std_logic_vector(3 downto 0)  := x"B";
-  constant UMODE_ECALL : std_logic_vector(3 downto 0)  := x"8";
-  constant BREAKPOINT  : std_logic_vector(3 downto 0)  := x"3";
-
-                                        --RESSET VECTORS
-  constant SYSTEM_RESET :
-    std_logic_vector(REGISTER_SIZE-1 downto 0) := std_logic_vector(to_unsigned(RESET_VECTOR - 16#00#, REGISTER_SIZE));
-  constant MACHINE_MODE_TRAP :
-    std_logic_vector(REGISTER_SIZE-1 downto 0) := std_logic_vector(to_unsigned(RESET_VECTOR - 16#40#, REGISTER_SIZE));
-
-                                        --func3 constants
-  constant CSRRW  : std_logic_vector(2 downto 0) := "001";
-  constant CSRRS  : std_logic_vector(2 downto 0) := "010";
-  constant CSRRC  : std_logic_vector(2 downto 0) := "011";
-  constant CSRRWI : std_logic_vector(2 downto 0) := "101";
-  constant CSRRSI : std_logic_vector(2 downto 0) := "110";
-  constant CSRRCI : std_logic_vector(2 downto 0) := "111";
-
-
-
---internal signals
-  signal csr_read_val  : std_logic_vector(REGISTER_SIZE -1 downto 0);
-  signal csr_write_val : std_logic_vector(REGISTER_SIZE -1 downto 0);
-  signal bit_sel       : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal ibit_sel      : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal resized_zimm  : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal bad_csr_num   : std_logic;
-  signal csr_read_en   : std_logic;
-  signal other_illegal : std_logic;
   component instruction_legal is
     generic (
-      INSTRUCTION_SIZE         : positive;
-      CHECK_LEGAL_INSTRUCTIONS : boolean);
+      check_legal_instructions : boolean);
     port (
-      instruction   : in  std_logic_vector(INSTRUCTION_SIZE-1 downto 0);
-      other_illegal : in  std_logic;
-      legal         : out std_logic);
+      instruction : in  std_logic_vector(instruction_size-1 downto 0);
+      legal       : out std_logic);
   end component;
 
+  --csr singnals. These are initialized to zero so that if any bits are nevver
+  --assigned, they act like constants
+  signal mstatus  : std_logic_vector(register_size-1 downto 0) := (others => '0');
+  signal mie      : std_logic_vector(register_size-1 downto 0) := (others => '0');
+  signal mepc     : std_logic_vector(register_size-1 downto 0) := (others => '0');
+  signal mcause   : std_logic_vector(register_size-1 downto 0) := (others => '0');
+  signal mbadaddr : std_logic_vector(register_size-1 downto 0) := (others => '0');
+  signal mip      : std_logic_vector(register_size-1 downto 0) := (others => '0');
+  signal mtime    : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
+  signal mtimeh   : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
+  signal meimask  : std_logic_vector(register_size-1 downto 0) := (others => '0');
+  signal meipend  : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
+
+
+
+  alias csr_select is instruction(CSR_ADDRESS'range);
+  alias func3 is instruction(INSTR_FUNC3'range);
+
+  signal bit_sel       : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal csr_read_val  : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal csr_write_val : std_logic_vector(REGISTER_SIZE-1 downto 0);
+
+  signal legal_instr : std_logic;
+
+  signal was_mret    : std_logic;
+  signal was_illegal : std_logic;
+  signal was_fence_i : std_logic;
+  signal pc_add_4    : std_logic_vector(current_pc'range);
+
+  signal interrupt_processor : std_logic;
+
+  signal time_counter : unsigned(63 downto 0);
 
 begin  -- architecture rtl
-  counter_increment : process (clk, reset) is
-  begin  -- process
-    if reset = '1' then
-      cycles        <= (others => '0');
-      instr_retired <= (others => '0');
 
-    elsif rising_edge(clk) then
-      cycles <= cycles +1;
-      if finished_instr = '1' then
-        instr_retired <= instr_retired +1;
+
+  -----------------------------------------------------------------------------
+  -- Implement the following :
+  -- mret instruction
+  -- csrrw
+  -- csrrs
+  -- csrrc (possibly not needed)
+  -- Omit immediate versions of the csr* instructions
+  -- Omit ECALL and EBREAK, as I can'tsee a reason with only mmode inplemented
+  --
+  -- Implement the following CSRs:
+  --     MSTATUS  (for IE,PIE bits)
+  --     MEPC
+  --     MCAUSE
+  --     MBADADDR (if bad reads are caught)
+  --     MIP
+  --     If expternal interupts are enabled:
+  --         MEIMASK  (external interrupt mask)
+  --         MEIPEND  (external interrupt
+  -----------------------------------------------------------------------------
+
+  instr_check : component instruction_legal
+    generic map (
+      check_legal_instructions => true)
+    port map (
+      instruction => instruction,
+      legal       => legal_instr);
+
+  --TIMER
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      time_counter <= time_counter + 1;
+      if reset = '1' then
+        time_counter <= (others => '0');
       end if;
     end if;
   end process;
 
-  assert COUNTER_LENGTH = 0 or COUNTER_LENGTH = 32 or COUNTER_LENGTH = 64 report "INVALID COUNTER_LENGTH" severity failure;
+  mtime  <= std_logic_vector(time_counter(REGISTER_SIZE - 1 downto 0)) when COUNTER_LENGTH /= 0 else (others => '0');
+  mtimeh <= std_logic_vector(time_counter(time_counter'left downto time_counter'left-REGISTER_SIZE+1))
+            when REGISTER_SIZE = 32 and COUNTER_LENGTH = 64 else (others => '0');
 
-  EXTRA_COUNTERS_GEN : if INCLUDE_EXTRA_COUNTERS generate
-    signal saved_opcode : std_logic_vector(4 downto 0);
-  begin
-    extra_counter_incr : process(clk)
-    begin
-      if reset = '1' then
+  with csr_select select
+    csr_read_val <=
+    mstatus         when CSR_MSTATUS,
+    mepc            when CSR_MEPC,
+    mcause          when CSR_MCAUSE,
+    mbadaddr        when CSR_MBADADDR,
+    mip             when CSR_MIP,
+    meimask         when CSR_MEIMASK,
+    meipend         when CSR_MEIPEND,
+    mtime           when CSR_MTIME,
+    mtimeh          when CSR_MTIMEH,
+    (others => '0') when others;
 
-        use_after_load_stalls <= (others => '0');
-        jal_instructions      <= (others => '0');
-        jalr_instructions     <= (others => '0');
-        branch_mispredicts    <= (others => '0');
-        other_flush           <= (others => '0');
-        load_stalls           <= (others => '0');
-
-      elsif rising_edge(clk) then
-        saved_opcode <= opcode;
-        if predict_corr = '1' then
-          if saved_opcode = "11011" then
-            jal_instructions <= jal_instructions + 1;
-          elsif saved_opcode = "11001" then
-            jalr_instructions <= jalr_instructions +1;
-          elsif saved_opcode = "11000" then
-            branch_mispredicts <= branch_mispredicts +1;
-          else
-            other_flush <= other_flush +1;
-          end if;
-        end if;
-        if use_after_load_stall = '1' then
-          use_after_load_stalls <= use_after_load_stalls + 1;
-        end if;
-        if load_stall = '1' then
-          load_stalls <= load_stalls + 1;
-        end if;
-      end if;
-    end process;
-  end generate EXTRA_COUNTERS_GEN;
-
-
-  mtime                          <= std_logic_vector(cycles(REGISTER_SIZE-1 downto 0));
-  mtimeh                         <= std_logic_vector(cycles(63 downto 64-REGISTER_SIZE));
-  mstatus(mstatus'left downto 1) <= (others => '0');
-  mstatus(0)                     <= mstatus_ie;
-  mcause(mcause'left)            <= mcause_i;
-  mcause(mcause'left-1 downto 4) <= (others => '0');
-  mcause(3 downto 0)             <= mcause_ex;
-  instret                        <= std_logic_vector(instr_retired(REGISTER_SIZE-1 downto 0));
-  instreth                       <= std_logic_vector(instr_retired(63 downto 64-REGISTER_SIZE));
-  -----------------------------------------------------------------------------
-  -- different muxes based on different configurations
-  -- Extra counters
-  -- timers
-  -- no timers
-  -----------------------------------------------------------------------------
-  read_mux_extra : if INCLUDE_EXTRA_COUNTERS generate
-    with csr select
-      csr_read_val <=
-      mtime                                   when CSR_CYCLE,
-      mtime                                   when CSR_TIME,
-      mtimeh                                  when CSR_CYCLEH,
-      mtimeh                                  when CSR_TIMEH,
-      mstatus                                 when CSR_MSTATUS,
-      mtvec                                   when CSR_MTVEC,
-      mepc                                    when CSR_MEPC,
-      mcause                                  when CSR_MCAUSE,
-      instret                                 when CSR_INSTRET,
-      instreth                                when CSR_INSTRETH,
-      mie                                     when CSR_MIE,
-      mip                                     when CSR_MIP,
-      std_logic_vector(jal_instructions)      when CSR_MBASE,
-      std_logic_vector(jalr_instructions)     when CSR_MBOUND,
-      std_logic_vector(branch_mispredicts)    when CSR_MIBASE,
-      std_logic_vector(other_flush)           when CSR_MIBOUND,
-      std_logic_vector(use_after_load_stalls) when CSR_MDBASE,
-      std_logic_vector(load_stalls)           when CSR_MDBOUND,
-      (others => '0')                         when others;
-
-  end generate read_mux_extra;
-  nread_mux_extra : if not INCLUDE_EXTRA_COUNTERS generate
-    count64_gen : if COUNTER_LENGTH = 64 generate
-      with csr select
-        csr_read_val <=
-        mtime           when CSR_TIME,
-        mtime           when CSR_CYCLE,
-        mtimeh          when CSR_TIMEH,
-        mtimeh          when CSR_CYCLEH,
-        instret         when CSR_INSTRET,
-        instreth        when CSR_INSTRETH,
-        mstatus         when CSR_MSTATUS,
-        mtvec           when CSR_MTVEC,
-        mepc            when CSR_MEPC,
-        mcause          when CSR_MCAUSE,
-        (others => '0') when others;
-      bad_csr_num <= '0';
-    end generate;
-
-    count32_gen : if COUNTER_LENGTH = 32 generate
-      with csr select
-        csr_read_val <=
-        mtime   when CSR_TIME,
-        mtime   when CSR_CYCLE,
-        mstatus when CSR_MSTATUS,
-        mtvec   when CSR_MTVEC,
-        mepc    when CSR_MEPC,
-        mcause  when CSR_MCAUSE,
-
-        (others => '0') when others;
-      bad_csr_num <= csr_read_en when csr = CSR_TIMEH or
-                     csr = CSR_CYCLEH else '0';
-    end generate;
-
-    count0_gen : if COUNTER_LENGTH = 0 generate
-      with csr select
-        csr_read_val <=
-        mstatus when CSR_MSTATUS,
-        mtvec   when CSR_MTVEC,
-        mepc    when CSR_MEPC,
-        mcause  when CSR_MCAUSE,
-
-        (others => '0') when others;
-      bad_csr_num <= '0';
-    end generate;
-
-  end generate;
-
-
-  bit_sel                                      <= rs1_data;
-  ibit_sel(REGISTER_SIZE-1 downto zimm'left+1) <= (others => '0');
-  ibit_sel(zimm'left downto 0)                 <= zimm;
-
-  resized_zimm(4 downto 0)                <= zimm;
-  resized_zimm(REGISTER_SIZE -1 downto 5) <= (others => '0');
+  bit_sel <= rs1_data;
 
   with func3 select
     csr_write_val <=
-    rs1_data                      when CSRRW,
-    csr_read_val or bit_sel       when CSRRS,
-    csr_read_val and not bit_sel  when CSRRC,
-    resized_zimm                  when CSRRWI,
-    csr_read_val or ibit_sel      when CSRRSI,
-    csr_read_val and not ibit_sel when CSRRCI,
-    (others => 'X')               when others;
+    rs1_data                     when CSRRW_FUNC3,
+    csr_read_val or bit_sel      when CSRRS_FUNC3,
+    csr_read_val and not bit_sel when CSRRC_FUNC3,
+    csr_read_val                 when others;  --no write
 
-  csr_read_en <= '1' when func3 /= "000" and func3 /= "100" and opcode = "11100" else '0';
 
-  output_proc : process(clk) is
+  process(clk)
   begin
     if rising_edge(clk) then
-                                        --writeback to register file
-      wb_data    <= csr_read_val;
-      pc_corr_en <= '0';
-      wb_en      <= '0';
+      wb_enable   <= '0';
+      wb_data     <= csr_read_val;
+      pc_add_4    <= std_logic_vector(unsigned(current_pc) + 4);
+      was_mret    <= '0';
+      was_fence_i <= '0';
+      was_illegal <= '0';
       if valid = '1' then
-        if legal_instruction = '0' then
-          mcause_i      <= '0';
-          mcause_ex     <= ILLEGAL_I;
-          pc_corr_en    <= '1';
-          pc_correction <= MACHINE_MODE_TRAP;
-          mepc          <= current_pc;
+        if legal_instr /= '1' and ENABLE_EXCEPTIONS then
+          ---------------------------------------------------------------------
+          -- Handle illegal instructions
+          ---------------------------------------------------------------------
+          mstatus(CSR_MSTATUS_MIE)  <= '0';
+          mstatus(CSR_MSTATUS_MPIE) <= mstatus(CSR_MSTATUS_MIE);
+          mcause                    <= std_logic_vector(to_unsigned(CSR_MCAUSE_ILLEGAL, mcause'length));
+          mepc                      <= current_pc;
+          was_illegal               <= '1';
+        elsif instruction(MAJOR_OP'range) = SYSTEM_OP  and stall_in = '0' then
+          if func3 /= "000" then
+            ---------------------------------------------------------------------
+            -- CSR READ/WRITE
+            ---------------------------------------------------------------------
+            wb_enable <= '1';
 
-        elsif opcode = "11100" then        --SYSTEM OP CODE
-          wb_en <= csr_read_en;
-          if zimm & func3 = "00000"&"000" then
-            if CSR = x"000" then           --ECALL
-              mcause_i      <= '0';
-              mcause_ex     <= UMODE_ECALL;
-              pc_corr_en    <= '1';
-              pc_correction <= MACHINE_MODE_TRAP;
-              mepc          <= current_pc;
-            elsif CSR = x"001" then        --EBREAK
-              mcause_i      <= '0';
-              mcause_ex     <= BREAKPOINT;
-              pc_corr_en    <= '1';
-              pc_correction <= MACHINE_MODE_TRAP;
-              mepc          <= current_pc;
-            elsif CSR = x"100" then        --ERET
-              pc_corr_en    <= '1';
-              pc_correction <= mepc;
+            --disable csr writes if exceptions are not enabled
+            if ENABLE_EXCEPTIONS then
+              case csr_select is
+                when CSR_MSTATUS =>
+                  --only 2 bits writeable
+                  mstatus(CSR_MSTATUS_MIE)  <= csr_write_val(CSR_MSTATUS_MIE);
+                  mstatus(CSR_MSTATUS_MPIE) <= csr_write_val(CSR_MSTATUS_MPIE);
+                when CSR_MEPC =>
+                  mepc <= csr_write_val;
+                when CSR_MCAUSE =>
+                  mcause <= csr_write_val;
+                when CSR_MBADADDR =>
+                  mbadaddr <= csr_write_val;
+                when CSR_MEIMASK =>
+                  meimask <= csr_write_val;
+
+                --READ only Registers
+                --when CSR_MIP      =>
+                --  mbadaddr <= csr_write_val;
+                --when CSR_MEIPEND  =>
+                --  meipend <= csr_write_val;
+                when others => null;
+              end case;
             end if;
-          else
-                                           --writeback to CSR
-            case CSR is
-              when CSR_MTOHOST =>
-                mtohost <= csr_write_val;  --write only register
-              when CSR_MEPC =>
-                mepc <= csr_write_val;
-              when others =>
-                null;
-            end case;
-          end if;
-        elsif instruction(31 downto 2) = FENCE_I(31 downto 2) then
-          pc_correction <= std_logic_vector(unsigned(current_pc) + 4);
-          pc_corr_en    <= '1';
-        end if;  --opcode
-
-      end if;  --valid
+          elsif instruction(SYSTEM_NOT_CSR'range) = SYSTEM_NOT_CSR then
+            ---------------------------------------------------------------------
+            -- OTHER SYSTEM INSTRUCTIONS (just Mret)
+            ---------------------------------------------------------------------
+            if instruction(31 downto 30) = "00" and instruction(27 downto 20) = "00000010" then
+              --treat all [USHM]RET instructions the same
+              mstatus(CSR_MSTATUS_MIE)  <= mstatus(CSR_MSTATUS_MPIE);
+              mstatus(CSR_MSTATUS_MPIE) <= '0';
+              was_mret                  <= '1';
+            end if;  --other system
+          end if;  --any system
+        elsif instruction(MAJOR_OP'range) = FENCE_OP then
+          --all FENCE is a NOP
+          --FENCE.I is a pipeline flush
+          was_fence_i <= instruction(12);
+        end if;  --valid
+      elsif interrupt_processor = '1' and ENABLE_EXCEPTIONS then
+        mstatus(CSR_MSTATUS_MIE)  <= '0';
+        mstatus(CSR_MSTATUS_MPIE) <= '1';
+        mcause(mcause'left)       <= '1';
+        mcause(3 downto 0)        <= std_logic_vector(to_unsigned(11, 4));
+        mepc                      <= instruction_fetch_pc;
+      end if;
       if reset = '1' then
-        mtohost    <= (others => '0');
-        mstatus_ie <= '0';
-        mcause_i   <= '0';
-        mcause_ex  <= (others => '0');
-      end if;  --reset
-    end if;  --clk
+
+        if ENABLE_EXCEPTIONS then
+          mstatus(CSR_MSTATUS_MIE)  <= '0';
+          mstatus(CSR_MSTATUS_MPIE) <= '0';
+          mie                       <= (others => '0');
+          mepc                      <= (others => '0');
+          mcause                    <= (others => '0');
+          meimask                   <= (others => '0');
+
+        end if;
+
+                                        --READ-ONLY
+                                        --mip     <= (others => '0');
+                                        --meipend <= (others => '0');
+      end if;
+    end if;
   end process;
 
-  to_host <= mtohost;
+-------------------------------------------------------------------------------
+-- handle external interrupts
+--
+--TODO: (Not yet implemented)
+-- nterrupt_processor goes high when pipeline is empty and and interrupt
+--is pending
+--
+--If interrupt is pending and enabled, slip the pipeline.
+-------------------------------------------------------------------------------
+  meipend <= external_interrupts;
+
+  interrupt_processor <= interrupt_pending and pipeline_empty;
+  interrupt_pending   <= mstatus(CSR_MSTATUS_MIE) when unsigned(meimask and meipend) /= 0 else '0';
 
 
-  other_illegal <= illegal_alu_instr when opcode = "01100" or opcode = "00100"else bad_csr_num;
-  li : component instruction_legal
-    generic map(INSTRUCTION_SIZE         => INSTRUCTION_SIZE,
-                CHECK_LEGAL_INSTRUCTIONS => CHECK_LEGAL_INSTRUCTIONS)
-    port map(instruction   => instruction,
-             other_illegal => other_illegal,
-             legal         => legal_instruction);
+-----------------------------------------------------------------------------
+-- There are several reasons that sys_calls might send a pc correction
+-- Timer interrupt (if timer enabled)
+-- external enterrupt
+-- illegal instruction
+-- mret instruction
+-- fence.i  (flush pipelin, and start over)
+-----------------------------------------------------------------------------
+
+  pc_corr_en <= was_fence_i or was_mret or was_illegal or interrupt_processor;
+
+  pc_correction <= pc_add_4 when was_fence_i = '1' else
+                   std_logic_vector(to_unsigned(RESET_VECTOR, pc_correction'length)) when was_illegal = '1' or interrupt_processor = '1' else
+                   mepc                                                              when was_mret = '1' else
+                   (others => '-');
+
 
 
 end architecture rtl;

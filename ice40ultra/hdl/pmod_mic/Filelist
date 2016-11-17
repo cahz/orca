@@ -1,3 +1,0 @@
-# Files in dependency order for Modelsim
-pmod_mic_ref_comp.vhd
-pmod_mic_wb.vhd

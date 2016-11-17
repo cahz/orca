@@ -103,10 +103,10 @@ set_global_assignment -name SDC_FILE system.sdc
 set_global_assignment -name VHDL_FILE riscv_test.vhd
 set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
 set_global_assignment -name QIP_FILE db/ip/sld7c65c258/alt_sld_fab.qip
-set_global_assignment -name USE_SIGNALTAP_FILE output_files/signal_tap.stp
-set_global_assignment -name ENABLE_SIGNALTAP ON
+set_global_assignment -name USE_SIGNALTAP_FILE test.stp
+set_global_assignment -name ENABLE_SIGNALTAP OFF
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 11.1
-set_global_assignment -name LAST_QUARTUS_VERSION 15.0.0
+set_global_assignment -name LAST_QUARTUS_VERSION 15.1.1
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "17:35:42  DECEMBER 14, 2011"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
@@ -637,4 +637,9 @@ set_instance_assignment -name IO_STANDARD "2.5 V" -to TOUCH_INT_n
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to TOUCH_I2C_SCL
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to TOUCH_I2C_SDA
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to TOUCH_INT_n
+set_global_assignment -name SYSTEMVERILOG_FILE system/synthesis/submodules/system_mm_interconnect_1_rsp_mux.sv -library system
+set_global_assignment -name SYSTEMVERILOG_FILE system/synthesis/submodules/system_mm_interconnect_1_cmd_mux.sv -library system
+set_global_assignment -name SYSTEMVERILOG_FILE system/synthesis/submodules/system_mm_interconnect_1_cmd_demux.sv -library system
+set_global_assignment -name SYSTEMVERILOG_FILE system/synthesis/submodules/system_mm_interconnect_1_router_001.sv -library system
+set_global_assignment -name SYSTEMVERILOG_FILE system/synthesis/submodules/system_mm_interconnect_1_router.sv -library system
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
