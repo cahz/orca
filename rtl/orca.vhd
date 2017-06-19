@@ -13,7 +13,7 @@ entity Orca is
     WISHBONE_ENABLE : integer range 0 to 1 := 0;
     AXI_ENABLE      : integer range 0 to 1 := 0;
 
-    RESET_VECTOR          : integer               := 16#00000200#;
+    RESET_VECTOR          : integer               := 16#00000000#;
     MULTIPLY_ENABLE       : natural range 0 to 1  := 0;
     DIVIDE_ENABLE         : natural range 0 to 1  := 0;
     SHIFTER_MAX_CYCLES    : natural               := 1;
@@ -24,147 +24,156 @@ entity Orca is
     LVE_ENABLE            : natural range 0 to 1  := 0;
     ENABLE_EXT_INTERRUPTS : natural range 0 to 1  := 0;
     NUM_EXT_INTERRUPTS    : integer range 1 to 32 := 1;
-    SCRATCHPAD_SIZE       : integer               := 1024;
+    SCRATCHPAD_ADDR_BITS  : integer               := 10;
     FAMILY                : string                := "ALTERA");
+  port(
+    clk            : in std_logic;
+    scratchpad_clk : in std_logic;
+    reset          : in std_logic;
 
-  port(clk            : in std_logic;
-       scratchpad_clk : in std_logic;
-       reset          : in std_logic;
+    --avalon data bus
+    avm_data_address              : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    avm_data_byteenable           : out std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
+    avm_data_read                 : out std_logic;
+    avm_data_readdata             : in  std_logic_vector(REGISTER_SIZE-1 downto 0) := x"00000000";
+    avm_data_write                : out std_logic;
+    avm_data_writedata            : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    avm_data_waitrequest          : in  std_logic                                  := '0';
+    avm_data_readdatavalid        : in  std_logic                                  := '0';
+    --avalon instruction bus
+    avm_instruction_address       : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    avm_instruction_read          : out std_logic;
+    avm_instruction_readdata      : in  std_logic_vector(REGISTER_SIZE-1 downto 0) := x"00000000";
+    avm_instruction_waitrequest   : in  std_logic                                  := '0';
+    avm_instruction_readdatavalid : in  std_logic                                  := '0';
+    --wishbone data bus
+    data_ADR_O                    : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    data_DAT_I                    : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
+    data_DAT_O                    : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    data_WE_O                     : out std_logic;
+    data_SEL_O                    : out std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
+    data_STB_O                    : out std_logic;
+    data_ACK_I                    : in  std_logic;
+    data_CYC_O                    : out std_logic;
+    data_CTI_O                    : out std_logic_vector(2 downto 0);
+    data_STALL_I                  : in  std_logic;
+    --wishbone instruction bus
+    instr_ADR_O                   : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    instr_DAT_I                   : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
+    instr_STB_O                   : out std_logic;
+    instr_ACK_I                   : in  std_logic;
+    instr_CYC_O                   : out std_logic;
+    instr_CTI_O                   : out std_logic_vector(2 downto 0);
+    instr_STALL_I                 : in  std_logic;
 
-       --avalon data bus
-       avm_data_address              : out std_logic_vector(REGISTER_SIZE-1 downto 0);
-       avm_data_byteenable           : out std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
-       avm_data_read                 : out std_logic;
-       avm_data_readdata             : in  std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => 'X');
-       avm_data_write                : out std_logic;
-       avm_data_writedata            : out std_logic_vector(REGISTER_SIZE-1 downto 0);
-       avm_data_waitrequest          : in  std_logic                                  := '0';
-       avm_data_readdatavalid        : in  std_logic                                  := '0';
-       --avalon instruction bus
-       avm_instruction_address       : out std_logic_vector(REGISTER_SIZE-1 downto 0);
-       avm_instruction_read          : out std_logic;
-       avm_instruction_readdata      : in  std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => 'X');
-       avm_instruction_waitrequest   : in  std_logic                                  := '0';
-       avm_instruction_readdatavalid : in  std_logic                                  := '0';
-       --wishbone data bus
-       data_ADR_O                    : out std_logic_vector(REGISTER_SIZE-1 downto 0);
-       data_DAT_I                    : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
-       data_DAT_O                    : out std_logic_vector(REGISTER_SIZE-1 downto 0);
-       data_WE_O                     : out std_logic;
-       data_SEL_O                    : out std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
-       data_STB_O                    : out std_logic;
-       data_ACK_I                    : in  std_logic;
-       data_CYC_O                    : out std_logic;
-       data_CTI_O                    : out std_logic_vector(2 downto 0);
-       data_STALL_I                  : in  std_logic;
-       --wishbone instruction bus
-       instr_ADR_O                   : out std_logic_vector(REGISTER_SIZE-1 downto 0);
-       instr_DAT_I                   : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
-       instr_STB_O                   : out std_logic;
-       instr_ACK_I                   : in  std_logic;
-       instr_CYC_O                   : out std_logic;
-       instr_CTI_O                   : out std_logic_vector(2 downto 0);
-       instr_STALL_I                 : in  std_logic;
+    --AXI
+    data_AWID    : out std_logic_vector(3 downto 0);
+    data_AWADDR  : out std_logic_vector(REGISTER_SIZE -1 downto 0);
+    data_AWLEN   : out std_logic_vector(3 downto 0);
+    data_AWSIZE  : out std_logic_vector(2 downto 0);
+    data_AWBURST : out std_logic_vector(1 downto 0);
+    data_AWLOCK  : out std_logic_vector(1 downto 0);
+    data_AWCACHE : out std_logic_vector(3 downto 0);
+    data_AWPROT  : out std_logic_vector(2 downto 0);
+    data_AWVALID : out std_logic;
+    data_AWREADY : in  std_logic;
 
-       --AXI BUS
+    data_WID    : out std_logic_vector(3 downto 0);
+    data_WDATA  : out std_logic_vector(REGISTER_SIZE -1 downto 0);
+    data_WSTRB  : out std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
+    data_WLAST  : out std_logic;
+    data_WVALID : out std_logic;
+    data_WREADY : in  std_logic;
 
-       -- Write address channel ---------------------------------------------------------
-       data_AWID    : out std_logic_vector(3 downto 0);  -- ID for write address signals
-       data_AWADDR  : out std_logic_vector(REGISTER_SIZE -1 downto 0);  -- Address of the first transferin a burst
-       data_AWLEN   : out std_logic_vector(3 downto 0);  -- Number of transfers in a burst, burst must not cross 4 KB boundary, burst length of 1 to 16 transfers in AXI3
-       data_AWSIZE  : out std_logic_vector(2 downto 0);  -- Maximum number of bytes to transfer in each data transfer (beat) in a burst
-       -- See Table A3-2 for AxSIZE encoding
-       -- 0b010 => 4 bytes in a transfer
-       data_AWBURST : out std_logic_vector(1 downto 0);  -- defines the burst type, fixed, incr, or wrap
-       -- fixed accesses the same address repeatedly, incr increments the address for each transfer, wrap = incr except rolls over to lower address if upper limit is reached
-       -- see table A3-3 for AxBURST encoding
-       data_AWLOCK  : out std_logic_vector(1 downto 0);  -- Ensures that only the master can access the targeted slave region
-       data_AWCACHE : out std_logic_vector(3 downto 0);  -- specifies memory type, see Table A4-5
-       data_AWPROT  : out std_logic_vector(2 downto 0);  -- specifies access permission, see Table A4-6
-       data_AWVALID : out std_logic;  -- Valid address and control information on bus, asserted until slave asserts AWREADY
-       data_AWREADY : in  std_logic := '0';  -- Slave is ready to accept address and control signals
+    data_BID    : in  std_logic_vector(3 downto 0);
+    data_BRESP  : in  std_logic_vector(1 downto 0);
+    data_BVALID : in  std_logic;
+    data_BREADY : out std_logic;
 
-       -- Write data channel ------------------------------------------------------------
-       data_WID    : out std_logic_vector(3 downto 0);  -- ID for write data signals
-       data_WDATA  : out std_logic_vector(REGISTER_SIZE -1 downto 0);
-       data_WSTRB  : out std_logic_vector(REGISTER_SIZE/8 -1 downto 0);  -- Specifies which byte lanes contain valid information
-       data_WLAST  : out std_logic;  -- Asserted when master is driving the final write transfer in the burst
-       data_WVALID : out std_logic;  -- Valid data available on bus, asserted until slave asserts WREADY
-       data_WREADY : in  std_logic;  -- Slave is now available to accept write data
+    data_ARID    : out std_logic_vector(3 downto 0);
+    data_ARADDR  : out std_logic_vector(REGISTER_SIZE -1 downto 0);
+    data_ARLEN   : out std_logic_vector(3 downto 0);
+    data_ARSIZE  : out std_logic_vector(2 downto 0);
+    data_ARBURST : out std_logic_vector(1 downto 0);
+    data_ARLOCK  : out std_logic_vector(1 downto 0);
+    data_ARCACHE : out std_logic_vector(3 downto 0);
+    data_ARPROT  : out std_logic_vector(2 downto 0);
+    data_ARVALID : out std_logic;
+    data_ARREADY : in  std_logic;
 
-       -- Write response channel ---------------------------------------------------------
-       data_BID    : in  std_logic_vector(3 downto 0);  -- ID for write response
-       data_BRESP  : in  std_logic_vector(1 downto 0);  -- Slave response (with error codes) to a write
-       data_BVALID : in  std_logic;  -- Indicates that the channel is signaling a valid write response
-       data_BREADY : out std_logic;  -- Indicates that master has acknowledged write response
+    data_RID    : in  std_logic_vector(3 downto 0);
+    data_RDATA  : in  std_logic_vector(REGISTER_SIZE -1 downto 0);
+    data_RRESP  : in  std_logic_vector(1 downto 0);
+    data_RLAST  : in  std_logic;
+    data_RVALID : in  std_logic;
+    data_RREADY : out std_logic;
 
-       -- Read address channel ------------------------------------------------------------
-       data_ARID    : out std_logic_vector(3 downto 0);
-       data_ARADDR  : out std_logic_vector(REGISTER_SIZE -1 downto 0);
-       data_ARLEN   : out std_logic_vector(3 downto 0);
-       data_ARSIZE  : out std_logic_vector(2 downto 0);
-       data_ARBURST : out std_logic_vector(1 downto 0);
-       data_ARLOCK  : out std_logic_vector(1 downto 0);
-       data_ARCACHE : out std_logic_vector(3 downto 0);
-       data_ARPROT  : out std_logic_vector(2 downto 0);
-       data_ARVALID : out std_logic;
-       data_ARREADY : in  std_logic;
+    instr_ARID    : out std_logic_vector(3 downto 0);
+    instr_ARADDR  : out std_logic_vector(REGISTER_SIZE -1 downto 0);
+    instr_ARLEN   : out std_logic_vector(3 downto 0);
+    instr_ARSIZE  : out std_logic_vector(2 downto 0);
+    instr_ARBURST : out std_logic_vector(1 downto 0);
+    instr_ARLOCK  : out std_logic_vector(1 downto 0);
+    instr_ARCACHE : out std_logic_vector(3 downto 0);
+    instr_ARPROT  : out std_logic_vector(2 downto 0);
+    instr_ARVALID : out std_logic;
+    instr_ARREADY : in  std_logic;
 
-       -- Read data channel -----------------------------------------------------------------
-       data_RID    : in  std_logic_vector(3 downto 0);
-       data_RDATA  : in  std_logic_vector(REGISTER_SIZE -1 downto 0);
-       data_RRESP  : in  std_logic_vector(1 downto 0);
-       data_RLAST  : in  std_logic;
-       data_RVALID : in  std_logic;
-       data_RREADY : out std_logic;
+    instr_RID    : in  std_logic_vector(3 downto 0);
+    instr_RDATA  : in  std_logic_vector(REGISTER_SIZE -1 downto 0);
+    instr_RRESP  : in  std_logic_vector(1 downto 0);
+    instr_RLAST  : in  std_logic;
+    instr_RVALID : in  std_logic;
+    instr_RREADY : out std_logic;
 
-       -- Read address channel ------------------------------------------------------------
-       instr_ARID    : out std_logic_vector(3 downto 0);
-       instr_ARADDR  : out std_logic_vector(REGISTER_SIZE -1 downto 0);
-       instr_ARLEN   : out std_logic_vector(3 downto 0);
-       instr_ARSIZE  : out std_logic_vector(2 downto 0);
-       instr_ARBURST : out std_logic_vector(1 downto 0);
-       instr_ARLOCK  : out std_logic_vector(1 downto 0);
-       instr_ARCACHE : out std_logic_vector(3 downto 0);
-       instr_ARPROT  : out std_logic_vector(2 downto 0);
-       instr_ARVALID : out std_logic;
-       instr_ARREADY : in  std_logic;
+    instr_AWID    : out std_logic_vector(3 downto 0);
+    instr_AWADDR  : out std_logic_vector(REGISTER_SIZE -1 downto 0);
+    instr_AWLEN   : out std_logic_vector(3 downto 0);
+    instr_AWSIZE  : out std_logic_vector(2 downto 0);
+    instr_AWBURST : out std_logic_vector(1 downto 0);
+    instr_AWLOCK  : out std_logic_vector(1 downto 0);
+    instr_AWCACHE : out std_logic_vector(3 downto 0);
+    instr_AWPROT  : out std_logic_vector(2 downto 0);
+    instr_AWVALID : out std_logic;
+    instr_AWREADY : in  std_logic;
+    instr_WID     : out std_logic_vector(3 downto 0);
+    instr_WDATA   : out std_logic_vector(REGISTER_SIZE -1 downto 0);
+    instr_WSTRB   : out std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
+    instr_WLAST   : out std_logic;
+    instr_WVALID  : out std_logic;
+    instr_WREADY  : in  std_logic;
+    instr_BID     : in  std_logic_vector(3 downto 0);
+    instr_BRESP   : in  std_logic_vector(1 downto 0);
+    instr_BVALID  : in  std_logic;
+    instr_BREADY  : out std_logic;
 
-       -- Read data channel -----------------------------------------------------------------
-       instr_RID    : in  std_logic_vector(3 downto 0);
-       instr_RDATA  : in  std_logic_vector(REGISTER_SIZE -1 downto 0);
-       instr_RRESP  : in  std_logic_vector(1 downto 0);
-       instr_RLAST  : in  std_logic;
-       instr_RVALID : in  std_logic;
-       instr_RREADY : out std_logic;
+    -------------------------------------------------------------------------------
+    -- Scratchpad Slave
+    -------------------------------------------------------------------------------
+    --avalon
+    avm_scratch_address       : in  std_logic_vector(SCRATCHPAD_ADDR_BITS-1 downto 0);
+    avm_scratch_byteenable    : in  std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
+    avm_scratch_read          : in  std_logic;
+    avm_scratch_readdata      : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    avm_scratch_write         : in  std_logic;
+    avm_scratch_writedata     : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
+    avm_scratch_waitrequest   : out std_logic;
+    avm_scratch_readdatavalid : out std_logic;
 
-       -- INSTRUCTION Write address channel ---------------------------------------------------------
-       -- these channels are not used, but need to be there for qsys
+    --wishbone
+    sp_ADR_I   : in  std_logic_vector(SCRATCHPAD_ADDR_BITS-1 downto 0);
+    sp_DAT_O   : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    sp_DAT_I   : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
+    sp_WE_I    : in  std_logic;
+    sp_SEL_I   : in  std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
+    sp_STB_I   : in  std_logic;
+    sp_ACK_O   : out std_logic;
+    sp_CYC_I   : in  std_logic;
+    sp_CTI_I   : in  std_logic_vector(2 downto 0);
+    sp_STALL_O : out std_logic; 
 
-       instr_AWID    : out std_logic_vector(3 downto 0);
-       instr_AWADDR  : out std_logic_vector(REGISTER_SIZE -1 downto 0);
-       instr_AWLEN   : out std_logic_vector(3 downto 0);
-       instr_AWSIZE  : out std_logic_vector(2 downto 0);
-       instr_AWBURST : out std_logic_vector(1 downto 0);
-       instr_AWLOCK  : out std_logic_vector(1 downto 0);
-       instr_AWCACHE : out std_logic_vector(3 downto 0);
-       instr_AWPROT  : out std_logic_vector(2 downto 0);
-       instr_AWVALID : out std_logic;
-       instr_AWREADY : in  std_logic := '0';
-       instr_WID     : out std_logic_vector(3 downto 0);
-       instr_WDATA   : out std_logic_vector(REGISTER_SIZE -1 downto 0);
-       instr_WSTRB   : out std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
-       instr_WLAST   : out std_logic;
-       instr_WVALID  : out std_logic;
-       instr_WREADY  : in  std_logic;
-       instr_BID     : in  std_logic_vector(3 downto 0);
-       instr_BRESP   : in  std_logic_vector(1 downto 0);
-       instr_BVALID  : in  std_logic;
-       instr_BREADY  : out std_logic;
-
-
-       global_interrupts : in std_logic_vector(NUM_EXT_INTERRUPTS-1 downto 0) := (others => '0')
-       );
+    global_interrupts : in std_logic_vector(NUM_EXT_INTERRUPTS-1 downto 0) := (others => '0')
+    );
 
 end entity Orca;
 
@@ -184,6 +193,21 @@ architecture rtl of Orca is
   signal core_instruction_waitrequest   : std_logic;
   signal core_instruction_readdatavalid : std_logic;
 
+  signal rom_instruction_address        : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal rom_instruction_read           : std_logic;
+  signal rom_instruction_readdata       : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal rom_instruction_waitrequest    : std_logic;
+  signal rom_instruction_readdatavalid  : std_logic;
+
+  signal sp_address   : std_logic_vector(SCRATCHPAD_ADDR_BITS-1 downto 0);
+  signal sp_byte_en   : std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
+  signal sp_write_en  : std_logic;
+  signal sp_read_en   : std_logic;
+  signal sp_writedata : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal sp_readdata  : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal sp_ack       : std_logic;
+
+
 
 
 begin  -- architecture rtl
@@ -198,6 +222,7 @@ begin  -- architecture rtl
     signal is_reading : std_logic;
     signal write_ack  : std_logic;
 
+    signal ack_mask : std_logic;
   begin
     core_data_readdata <= avm_data_readdata;
 
@@ -233,6 +258,27 @@ begin  -- architecture rtl
     core_instruction_readdata      <= avm_instruction_readdata;
     core_instruction_waitrequest   <= avm_instruction_waitrequest;
     core_instruction_readdatavalid <= avm_instruction_readdatavalid;
+
+    sp_address              <= avm_scratch_address;
+    sp_byte_en              <= avm_scratch_byteenable;
+    sp_read_en              <= avm_scratch_read;
+    sp_write_en             <= avm_scratch_write;
+    sp_writedata            <= avm_scratch_writedata;
+    avm_scratch_readdata    <= sp_readdata;
+    avm_scratch_waitrequest <= '0';
+    process(clk)
+    begin
+      if rising_edge(clk) then
+        if sp_ack = '1' then
+          ack_mask <= '0';
+        end if;
+        if sp_read_en = '1' then
+          ack_mask <= '1';
+        end if;
+      end if;
+    end process;
+    avm_scratch_readdatavalid <= sp_ack and ack_mask;
+
   end generate avalon_enabled;
 
   -----------------------------------------------------------------------------
@@ -265,6 +311,17 @@ begin  -- architecture rtl
       end if;
     end process;
 
+    --scrachpad slave
+    sp_address   <= sp_ADR_I;
+    sp_DAT_O     <= sp_readdata;
+    sp_writedata <= sp_DAT_I;
+    sp_write_en  <= sp_WE_I and sp_STB_I and sp_CYC_I;
+    sp_read_en   <= not sp_WE_I and sp_STB_I and sp_CYC_I;
+    sp_byte_en   <= sp_SEL_I;
+    sp_ACK_O     <= sp_ack;
+    sp_STALL_O   <= '0';
+
+
   end generate wishbone_enabled;
 
   axi_enabled : if AXI_ENABLE = 1 generate
@@ -275,94 +332,75 @@ begin  -- architecture rtl
     -- incremental bursts
     constant BURST_INCR : std_logic_vector(1 downto 0) := "01";
 
+    signal core_instruction_stall4 : std_logic := '0';
 
-    signal core_data_stall1        : std_logic;
-    signal core_data_stall2        : std_logic;
-    signal core_data_stall3        : std_logic;
-    signal write_ack               : std_logic;
-    signal core_instruction_stall4 : std_logic;
+    signal axi_reset : std_logic;
 
-    type state_t is (IDLE, WRITE_ADDR, WRITE_DATA);
-    signal state : state_t;
   begin
 
---BUG: this combinational logic assumes that AWREADY and WREADY are the same signal
---BUG: this logic disregards the write response data
+    axi_reset <= not reset;
 
-    data_AWID        <= (others => '0');
-    data_AWADDR      <= core_data_address;
-    data_AWLEN       <= BURST_LEN;
-    data_AWSIZE      <= BURST_SIZE;
-    data_AWBURST     <= BURST_INCR;
-    data_AWLOCK      <= (others => '0');
-    data_AWCACHE     <= (others => '0');
-    data_AWPROT      <= (others => '0');
-    data_AWVALID     <= core_data_write when (state /= WRITE_DATA) else '0';
-    core_data_stall1 <= not data_AWREADY;
-    data_WID         <= (others => '0');
-    data_WDATA       <= core_data_writedata;
-    data_WSTRB       <= core_data_byteenable;
-    data_WLAST       <= '1';
-    data_WVALID      <= core_data_write when (state /= WRITE_ADDR) else '0';
-    core_data_stall2 <= data_WREADY;
-    --data_BID
-    --data_BRESP
-    --data_BVALID
-    data_BREADY      <= '1';
+    axi_data_master : axi_master
+      generic map (
+        ADDR_WIDTH    => REGISTER_SIZE,
+        REGISTER_SIZE => REGISTER_SIZE,
+        BYTE_SIZE     => 8
+      )
 
+      port map (
+        clk                     => clk,
+        aresetn                 => axi_reset,
+        core_data_address       => core_data_address, 
+        core_data_byteenable    => core_data_byteenable,  
+        core_data_read          => core_data_read,         
+        core_data_readdata      => core_data_readdata,    
+        core_data_write         => core_data_write,        
+        core_data_writedata     => core_data_writedata,    
+        core_data_ack           => core_data_ack,
 
-    data_ARID          <= (others => '0');
-    data_ARADDR        <= core_data_address;
-    data_ARLEN         <= BURST_LEN;
-    data_ARSIZE        <= BURST_SIZE;
-    data_ARBURST       <= BURST_INCR;
-    data_ARLOCK        <= (others => '0');
-    data_ARCACHE       <= (others => '0');
-    data_ARPROT        <= (others => '0');
-    data_ARVALID       <= core_data_read;
-    core_data_stall3   <= not data_ARREADY;
-    -- data_RID
-    core_data_readdata <= data_RDATA;
-    -- data_RRESP
-    -- data_RLAST
-    core_data_ack      <= data_RVALID or write_ack;
-    data_RREADY        <= '1';
+        AWID                    => data_AWID, 
+        AWADDR                  => data_AWADDR, 
+        AWLEN                   => data_AWLEN,
+        AWSIZE                  => data_AWSIZE,
+        AWBURST                 => data_AWBURST,
+        AWLOCK                  => data_AWLOCK, 
+        AWCACHE                 => data_AWCACHE,
+        AWPROT                  => data_AWPROT,
+        AWVALID                 => data_AWVALID,
+        AWREADY                 => data_AWREADY,
 
-    -- This Process handles coupling the decoupled write data and write address channels
-    data_write_proc : process(clk)
-    begin
-      if rising_edge(clk) then
-        write_ack <= '0';
-        case state is
-          when IDLE =>
-            if core_data_write = '1' then
-              write_ack <= data_AWREADY and data_WREADY;
-              if (data_AWREADY and not data_WREADY) = '1' then
-                state <= WRITE_DATA;
-              elsif (not data_AWREADY and data_WREADY) = '1' then
-                state <= WRITE_ADDR;
-              end if;
-            end if;
-          when WRITE_ADDR =>
-            if data_AWREADY = '1' then
-              state     <= IDLE;
-              write_ack <= '1';
-            end if;
-          when WRITE_DATA =>
-            if data_WREADY = '1' then
-              state     <= IDLE;
-              write_ack <= '1';
-            end if;
-          when others => null;
-        end case;
-        if reset = '1' then
-          state <= IDLE;
-        end if;
-      end if;
-    end process;
+        WID                     => data_WID,
+        WSTRB                   => data_WSTRB,
+        WLAST                   => data_WLAST,
+        WVALID                  => data_WVALID,
+        WDATA                   => data_WDATA,
+        WREADY                  => data_WREADY,
+        
+        BID                     => data_BID,
+        BRESP                   => data_BRESP,
+        BVALID                  => data_BVALID,
+        BREADY                  => data_BREADY,
 
-    --Instruction read port
+        ARID                    => data_ARID, 
+        ARADDR                  => data_ARADDR,
+        ARLEN                   => data_ARLEN, 
+        ARSIZE                  => data_ARSIZE,
+        ARLOCK                  => data_ARLOCK,
+        ARCACHE                 => data_ARCACHE,
+        ARPROT                  => data_ARPROT,
+        ARBURST                 => data_ARBURST,
+        ARVALID                 => data_ARVALID,
+        ARREADY                 => data_ARREADY,
 
+        RID                     => data_RID, 
+        RDATA                   => data_RDATA, 
+        RRESP                   => data_RRESP,
+        RLAST                   => data_RLAST, 
+        RVALID                  => data_RVALID,
+        RREADY                  => data_RREADY
+      );
+
+    -- Instruction read port
     instr_ARID                     <= (others => '0');
     instr_ARADDR                   <= core_instruction_address;
     instr_ARLEN                    <= BURST_LEN;
@@ -401,7 +439,7 @@ begin  -- architecture rtl
 
   end generate axi_enabled;
 
-  core : component orca_core
+  core : orca_core
     generic map(
       REGISTER_SIZE      => REGISTER_SIZE,
       RESET_VECTOR       => RESET_VECTOR,
@@ -414,7 +452,7 @@ begin  -- architecture rtl
       PIPELINE_STAGES    => PIPELINE_STAGES,
       LVE_ENABLE         => LVE_ENABLE,
       NUM_EXT_INTERRUPTS => CONDITIONAL(ENABLE_EXT_INTERRUPTS > 0, NUM_EXT_INTERRUPTS, 0),
-      SCRATCHPAD_SIZE    => SCRATCHPAD_SIZE,
+      SCRATCHPAD_SIZE    => CONDITIONAL(LVE_ENABLE = 1, 2**SCRATCHPAD_ADDR_BITS, 0),
       FAMILY             => FAMILY)
 
     port map(
@@ -437,9 +475,14 @@ begin  -- architecture rtl
       core_instruction_waitrequest   => core_instruction_waitrequest,
       core_instruction_readdatavalid => core_instruction_readdatavalid,
 
+      sp_address   => sp_address(CONDITIONAL(LVE_ENABLE = 1, SCRATCHPAD_ADDR_BITS, 0)-1 downto 0),
+      sp_byte_en   => sp_byte_en,
+      sp_write_en  => sp_write_en,
+      sp_read_en   => sp_read_en,
+      sp_writedata => sp_writedata,
+      sp_readdata  => sp_readdata,
+      sp_ack       => sp_ack,
+
       external_interrupts => global_interrupts(CONDITIONAL(ENABLE_EXT_INTERRUPTS > 0, NUM_EXT_INTERRUPTS, 0)-1 downto 0));
-
-
-
 
 end architecture rtl;

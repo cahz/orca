@@ -42,6 +42,15 @@ entity orca_core is
        core_instruction_waitrequest   : in  std_logic                                  := '0';
        core_instruction_readdatavalid : in  std_logic                                  := '0';
 
+       --memory-bus scratchpad-slave
+       sp_address   : in  std_logic_vector(log2(SCRATCHPAD_SIZE)-1 downto 0);
+       sp_byte_en   : in  std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
+       sp_write_en  : in  std_logic;
+       sp_read_en   : in  std_logic;
+       sp_writedata : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
+       sp_readdata  : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+       sp_ack       : out std_logic;
+
        external_interrupts : in std_logic_vector(NUM_EXT_INTERRUPTS-1 downto 0) := (others => '0')
        );
 
@@ -105,12 +114,12 @@ architecture rtl of orca_core is
   signal decode_flushed : std_logic;
   signal ifetch_next_pc : std_logic_vector(REGISTER_SIZE-1 downto 0);
 
-
+  signal e_sp_addr : std_logic_vector(CONDITIONAL(LVE_ENABLE = 1, sp_address'length,0)-1 downto 0);
 begin  -- architecture rtl
   pipeline_flush <= branch_get_flush(branch_pred_to_instr_fetch);
 
 
-  instr_fetch : component instruction_fetch
+  instr_fetch : instruction_fetch
     generic map (
       REGISTER_SIZE     => REGISTER_SIZE,
       RESET_VECTOR      => RESET_VECTOR,
@@ -135,11 +144,12 @@ begin  -- architecture rtl
 
   d_valid <= if_valid_out and not pipeline_flush;
 
-  D : component decode
+  D : decode
     generic map(
       REGISTER_SIZE       => REGISTER_SIZE,
       SIGN_EXTENSION_SIZE => SIGN_EXTENSION_SIZE,
-      PIPELINE_STAGES     => PIPELINE_STAGES-3)
+      PIPELINE_STAGES     => PIPELINE_STAGES-3,
+      FAMILY              => FAMILY)
     port map(
       clk            => clk,
       reset          => reset,
@@ -168,7 +178,8 @@ begin  -- architecture rtl
       decode_flushed => decode_flushed);
 
   e_valid <= d_valid_out and not pipeline_flush;
-  X : component execute
+  e_sp_addr <= sp_address(e_sp_addr'range);
+  X : execute
     generic map (
       REGISTER_SIZE       => REGISTER_SIZE,
       SIGN_EXTENSION_SIZE => SIGN_EXTENSION_SIZE,
@@ -178,7 +189,7 @@ begin  -- architecture rtl
       SHIFTER_MAX_CYCLES  => SHIFTER_MAX_CYCLES,
       COUNTER_LENGTH      => COUNTER_LENGTH,
       ENABLE_EXCEPTIONS   => ENABLE_EXCEPTIONS = 1,
-      SCRATCHPAD_SIZE     => CONDITIONAL(LVE_ENABLE = 1, SCRATCHPAD_SIZE, 0),
+      SCRATCHPAD_SIZE     => SCRATCHPAD_SIZE,
       FAMILY              => FAMILY)
     port map (
       clk                => clk,
@@ -209,6 +220,15 @@ begin  -- architecture rtl
       writedata => data_write_data,
       readdata  => data_read_data,
       data_ack  => e_data_ack,
+
+      --sp slave
+      sp_address   => e_sp_addr,
+      sp_byte_en   => sp_byte_en,
+      sp_write_en  => sp_write_en,
+      sp_read_en   => sp_read_en,
+      sp_writedata => sp_writedata,
+      sp_readdata  => sp_readdata,
+      sp_ack       => sp_ack,
 
       -- Interrupt lines
       external_interrupts => ext_int_resized,

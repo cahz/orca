@@ -23,7 +23,7 @@ set_module_property NAME interrrupt_gen
 set_module_property VERSION 1.0
 set_module_property INTERNAL false
 set_module_property OPAQUE_ADDRESS_MAP true
-set_module_property GROUP "Test Components"
+set_module_property GROUP "VectorBlox Computing Inc./Test Components"
 set_module_property AUTHOR ""
 set_module_property DISPLAY_NAME "Genereate Interrupt"
 set_module_property INSTANTIATE_IN_SYSTEM_MODULE true

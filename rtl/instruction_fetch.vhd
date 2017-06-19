@@ -50,8 +50,9 @@ architecture rtl of instruction_fetch is
   signal instr_out_saved       : std_logic_vector(instr_out'range);
   signal valid_instr_out_saved : std_logic;
 
-  signal predicted_pc : unsigned(REGISTER_SIZE -1 downto 0);
-  signal next_address : unsigned(REGISTER_SIZE -1 downto 0);
+  signal predicted_pc      : unsigned(REGISTER_SIZE -1 downto 0);
+  signal next_address      : unsigned(REGISTER_SIZE -1 downto 0);
+  signal last_next_address : unsigned(REGISTER_SIZE -1 downto 0);
 
   signal suppress_valid_instr_out : std_logic;
   signal dont_increment           : std_logic;
@@ -116,9 +117,10 @@ begin  -- architecture rtl
   bramch_pred_proc : process(clk)
   begin
     if rising_edge(clk) then
-      predicted_pc <= next_address +4;
+      last_next_address <= next_address;
     end if;
   end process;
+  predicted_pc <= last_next_address +4;
 
   pc_corr_proc : process(clk)
   begin

@@ -41,7 +41,11 @@ package utils is
     return std_logic;
   function bool_to_int (
     signal a : std_logic)
-    return integer ;
+    return integer;
+
+  function bool_to_sl (
+     a : boolean)
+    return std_logic;
 
 end utils;
 package body utils is
@@ -54,6 +58,16 @@ package body utils is
     end if;
     return 0;
   end function bool_to_int;
+
+  function bool_to_sl (
+     a : boolean)
+    return std_logic is
+  begin  -- function bool_to_int
+    if a then
+      return '1';
+    end if;
+    return '0';
+  end function bool_to_sl;
 
 
   function log2_f(

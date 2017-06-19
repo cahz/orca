@@ -19,9 +19,9 @@ begin  -- architecture rtl
   process
   begin
     clks <= "111";
-    wait for 2ns;
+    wait for 2 ns;
     clks <= "110";
-    wait for 1ns;
+    wait for 1 ns;
     clks <= "100";
     wait for 1 ns;
     clks <= "101";

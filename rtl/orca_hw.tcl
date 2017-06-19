@@ -9,7 +9,14 @@
 #
 package require -exact qsys 15.0
 
-
+proc log2 { num } {
+	 set retval 0
+	 while { $num > 1 } {
+		  set retval [expr $retval + 1 ]
+		  set num [expr $num / 2 ]
+	 }
+	 return $retval
+}
 #
 # module orca
 #
@@ -18,8 +25,8 @@ set_module_property NAME "vectorblox_orca"
 set_module_property VERSION 1.0
 set_module_property INTERNAL false
 set_module_property OPAQUE_ADDRESS_MAP true
-set_module_property AUTHOR ""
-set_module_property GROUP "Vectorblox/Processors"
+set_module_property AUTHOR "VectorBlox Computing Inc."
+set_module_property GROUP "VectorBlox Computing Inc./Processors"
 set_module_property DISPLAY_NAME "Orca (RISC-V)"
 set_module_property INSTANTIATE_IN_SYSTEM_MODULE true
 set_module_property EDITABLE true
@@ -48,8 +55,8 @@ add_fileset_file vblox_orca/register_file.vhd VHDL PATH register_file.vhd
 add_fileset_file vblox_orca/orca.vhd VHDL PATH orca.vhd TOP_LEVEL_FILE
 add_fileset_file vblox_orca/orca_core.vhd VHDL PATH orca_core.vhd TOP_LEVEL_FILE
 add_fileset_file vblox_orca/sys_call.vhd VHDL PATH sys_call.vhd
-add_fileset_file vblox_orca/4port_mem.vhd VHDL PATH 4port_mem.vhd
 add_fileset_file vblox_orca/lve_top.vhd VHDL PATH lve_top.vhd
+add_fileset_file vblox_orca/axi_master.vhd VHDL PATH axi_master.vhd
 
 add_fileset SIM_VHDL SIM_VHDL "" ""
 set_fileset_property SIM_VHDL TOP_LEVEL Orca
@@ -68,8 +75,8 @@ add_fileset_file vblox_orca/register_file.vhd VHDL PATH register_file.vhd
 add_fileset_file vblox_orca/orca.vhd VHDL PATH orca.vhd
 add_fileset_file vblox_orca/orca_core.vhd VHDL PATH orca_core.vhd
 add_fileset_file vblox_orca/sys_call.vhd VHDL PATH sys_call.vhd
-add_fileset_file vblox_orca/4port_mem.vhd VHDL PATH 4port_mem.vhd
 add_fileset_file vblox_orca/lve_top.vhd VHDL PATH lve_top.vhd
+add_fileset_file vblox_orca/axi_master.vhd VHDL PATH axi_master.vhd
 
 
 #
@@ -113,14 +120,19 @@ set_parameter_property LVE_ENABLE ALLOWED_RANGES 0:1
 set_parameter_property LVE_ENABLE HDL_PARAMETER true
 set_display_item_property LVE_ENABLE DISPLAY_HINT boolean
 
-add_parameter  SCRATCHPAD_SIZE integer 1024
+
+add_parameter SCRATCHPAD_SIZE integer 64
 set_parameter_property SCRATCHPAD_SIZE DISPLAY_NAME "        Scratchpad size"
-set_parameter_property SCRATCHPAD_SIZE DESCRIPTION "Enable Vector Extensions"
-set_parameter_property SCRATCHPAD_SIZE UNITS Bytes
-set_parameter_property SCRATCHPAD_SIZE HDL_PARAMETER true
+set_parameter_property SCRATCHPAD_SIZE DESCRIPTION "        Scratchpad size"
+set_parameter_property SCRATCHPAD_SIZE UNITS kilobytes
+set_parameter_property SCRATCHPAD_SIZE HDL_PARAMETER false
 set_parameter_property SCRATCHPAD_SIZE visible false
 
-
+add_parameter SCRATCHPAD_ADDR_BITS integer 1024
+set_parameter_property SCRATCHPAD_ADDR_BITS DISPLAY_NAME "        Scratchpad address bits"
+set_parameter_property SCRATCHPAD_ADDR_BITS HDL_PARAMETER true
+set_parameter_property SCRATCHPAD_ADDR_BITS visible true
+set_parameter_property SCRATCHPAD_ADDR_BITS derived true
 
 add_parameter RESET_VECTOR NATURAL 512
 set_parameter_property RESET_VECTOR DISPLAY_NAME "Reset Vector"
@@ -304,6 +316,8 @@ add_interface_port data avm_data_waitrequest waitrequest Input 1
 add_interface_port data avm_data_readdatavalid readdatavalid Input 1
 
 
+
+
 #
 # Data Axi Port
 #
@@ -358,12 +372,12 @@ add_interface_port axi_data_master data_WVALID wvalid Output 1
 
 
 #
-# Data Axi Port
+# Instruction Axi Port
 #
 add_interface axi_instr_master axi start
 set_interface_property axi_instr_master associatedClock clock
 set_interface_property axi_instr_master associatedReset reset
-set_interface_property axi_instr_master readIssuingCapability 1
+set_interface_property axi_instr_master readIssuingCapability 2
 set_interface_property axi_instr_master writeIssuingCapability 1
 set_interface_property axi_instr_master combinedIssuingCapability 1
 set_interface_property axi_instr_master ENABLED true
@@ -443,6 +457,42 @@ add_interface_port instruction avm_instruction_waitrequest waitrequest Input 1
 add_interface_port instruction avm_instruction_readdatavalid readdatavalid Input 1
 
 #
+# connection point scratch
+#
+add_interface scratch avalon slave
+
+set_interface_property scratch addressUnits SYMBOLS
+set_interface_property scratch associatedClock clock
+set_interface_property scratch associatedReset reset
+set_interface_property scratch bitsPerSymbol 8
+set_interface_property scratch burstOnBurstBoundariesOnly false
+set_interface_property scratch burstcountUnits WORDS
+set_interface_property scratch holdTime 0
+set_interface_property scratch linewrapBursts false
+set_interface_property scratch maximumPendingReadTransactions 1
+set_interface_property scratch maximumPendingWriteTransactions 0
+set_interface_property scratch readLatency 0
+set_interface_property scratch readWaitTime 1
+set_interface_property scratch setupTime 0
+set_interface_property scratch timingUnits Cycles
+set_interface_property scratch writeWaitTime 0
+set_interface_property scratch ENABLED true
+set_interface_property scratch EXPORT_OF ""
+set_interface_property scratch PORT_NAME_MAP ""
+set_interface_property scratch CMSIS_SVD_VARIABLES ""
+set_interface_property scratch SVD_ADDRESS_GROUP ""
+
+add_interface_port scratch avm_scratch_address address Input scratchpad_addr_bits
+add_interface_port scratch avm_scratch_byteenable byteenable Input register_size/8
+add_interface_port scratch avm_scratch_read read Input 1
+add_interface_port scratch avm_scratch_readdata readdata Output register_size
+add_interface_port scratch avm_scratch_write write Input 1
+add_interface_port scratch avm_scratch_writedata writedata Input register_size
+add_interface_port scratch avm_scratch_waitrequest waitrequest Output 1
+add_interface_port scratch avm_scratch_readdatavalid readdatavalid Output 1
+
+
+#
 # connection point global_interrupts
 #
 
@@ -487,6 +537,16 @@ add_interface_port unused_wishbone_bus       instr_CYC_O    export14     output 
 add_interface_port unused_wishbone_bus       instr_CTI_O    export15     output 3
 add_interface_port unused_wishbone_bus       instr_STALL_I  export16      input 1
 
+add_interface_port unused_wishbone_bus       sp_ADR_I     export20     input scratchpad_addr_bits
+add_interface_port unused_wishbone_bus       sp_DAT_O     export21      output  REGISTER_SIZE
+add_interface_port unused_wishbone_bus       sp_DAT_I     export22     input REGISTER_SIZE
+add_interface_port unused_wishbone_bus       sp_WE_I      export23     input 1
+add_interface_port unused_wishbone_bus       sp_SEL_I     export24     input REGISTER_SIZE/8
+add_interface_port unused_wishbone_bus       sp_STB_I     export25     input 1
+add_interface_port unused_wishbone_bus       sp_ACK_O     export26     output 1
+add_interface_port unused_wishbone_bus       sp_CYC_I     export27     input 1
+add_interface_port unused_wishbone_bus       sp_CTI_I     export28     input 3
+add_interface_port unused_wishbone_bus       sp_STALL_O   export29      output 1
 
 
 proc log_out {out_str} {
@@ -497,6 +557,7 @@ proc log_out {out_str} {
 }
 
 proc elaboration_callback {} {
+
 	 if { [get_parameter_value MULTIPLY_ENABLE] } {
 		  set_display_item_property SHIFTER_MAX_CYCLES ENABLED false
 	 } else {
@@ -504,14 +565,20 @@ proc elaboration_callback {} {
 	 }
 
 	 if { [get_parameter_value LVE_ENABLE] } {
-
 		  set_interface_property scratchpad_clk ENABLED true
+		  set_interface_property scratch ENABLED true
 		  set_parameter_property SCRATCHPAD_SIZE visible true
 	 } else {
 		  set_interface_property scratchpad_clk ENABLED false
+		  set_interface_property scratch ENABLED false
 		  set_parameter_property SCRATCHPAD_SIZE visible false
 	 }
-
+	 set sp_size [expr 1024*[get_parameter_value SCRATCHPAD_SIZE ] ]
+	 set log_size [log2 $sp_size]
+	 set_parameter_value SCRATCHPAD_ADDR_BITS $log_size
+	 if { [expr 2**$log_size != $sp_size ] } {
+		  send_message Error "Scratchpad size is not a power of two"
+	 }
 	 set table_size 0
 	 if { [get_parameter_value BRANCH_PREDICTION] } {
 		  set_parameter_property BTB_SIZE visible true

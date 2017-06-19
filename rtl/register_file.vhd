@@ -17,7 +17,6 @@ entity register_file is
     wb_sel      : in std_logic_vector(REGISTER_NAME_SIZE -1 downto 0);
     wb_data     : in std_logic_vector(REGISTER_SIZE -1 downto 0);
     wb_enable   : in std_logic;
-    wb_valid    : in std_logic;
 
     rs1_data : buffer std_logic_vector(REGISTER_SIZE -1 downto 0);
     rs2_data : buffer std_logic_vector(REGISTER_SIZE -1 downto 0)
@@ -74,7 +73,7 @@ architecture rtl of register_file is
 
 begin
 
-  we <= wb_enable and wb_valid;
+  we <= wb_enable;
   register_proc : process (clk) is
   begin
     if rising_edge(clk) then
@@ -95,10 +94,10 @@ begin
     if rising_edge(clk) then
       read_during_write2 <= '0';
       read_during_write1 <= '0';
-      if rs1_sel = wb_sel and wb_enable = '1' and wb_valid = '1' then
+      if rs1_sel = wb_sel and we = '1' then
         read_during_write1 <= '1';
       end if;
-      if rs2_sel = wb_sel and wb_enable = '1' and wb_valid = '1' then
+      if rs2_sel = wb_sel and we = '1' then
         read_during_write2 <= '1';
       end if;
       wb_data_latched <= wb_data;

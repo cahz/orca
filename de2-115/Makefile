@@ -12,10 +12,9 @@ STA_RPT_FILE=$(OUTPUT_DIR)system.sta.rpt
 all: system.sof  $(STA_RPT_FILE)
 
 DEVICE_FAMILY=$(shell grep deviceFamily $(QSYS_FILE) | head -1 | sed 's/.*value="\(.*\)".*/\1/')
-ORCA_FILES=$(wildcard ../rtl/*.vhd)
 TEST_FILES+=$(wildcard test_components/*.vhd)
 
-ORCA_SUBMODULE_FILES=$(addprefix system/synthesis/submodules/vblox_orca/,$(notdir $(ORCA_FILES)))
+ORCA_SUBMODULE_FILES=$(wildcard system/synthesis/submodules/vblox_orca/*.vhd)
 TEST_SUBMODULE_FILES=$(addprefix system/synthesis/submodules/,$(notdir $(TEST_FILES)))
 SUBMODULE_FILES=$(ORCA_SUBMODULE_FILES) $(TEST_SUBMODULE_FILES)
 TOP_LEVEL_FILES=$(wildcard *.vhd)
@@ -44,13 +43,12 @@ endif
 ifdef SHIFTER_MAX_CYCLES
 	sed -i 's|parameter name="SHIFTER_MAX_CYCLES" value=".*" />|parameter name="SHIFTER_MAX_CYCLES" value=$(SHIFTER_MAX_CYCLES) />|' $(QSYS_FILE)
 endif
-#ifdef FORWARD_ALU_ONLY
-#	sed -i 's|parameter name="FORWARD_ALU_ONLY" value=".*" />|parameter name="FORWARD_ALU_ONLY" value="$(FORWARD_ALU_ONLY)" />|' $(QSYS_FILE)
-#endif
+ifdef ENABLE_EXCEPTIONS
+	sed -i 's|parameter name="ENABLE_EXCEPTIONS" value=".*" />|parameter name="ENABLE_EXCEPTIONS" value=$(ENABLE_EXCEPTIONS) />|' $(QSYS_FILE)
+endif
 
 $(QIP_FILE):$(QSYS_FILE) ../rtl/orca_hw.tcl
 	qsys-generate --synthesis=VHDL system.qsys 2>&1 | tee ./system.qsys.log
-	rm $(ORCA_SUBMODULE_FILES)
 
 $(ORCA_SUBMODULE_FILES): system/synthesis/submodules/vblox_orca/% : ../rtl/% | $(QIP_FILE)
 	 cp $^ $@

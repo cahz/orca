@@ -391,7 +391,7 @@
  <connection
    kind="clock"
    version="15.1"
-   start="clock_gen_0.clk_3x"
+   start="clock_gen_0.clk_2x"
    end="vectorblox_orca_0.scratchpad_clk" />
  <connection
    kind="clock"

@@ -50,7 +50,7 @@ entity execute is
 
 
 
---memory-bus
+    --memory-bus master
     address   : out std_logic_vector(REGISTER_SIZE-1 downto 0);
     byte_en   : out std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
     write_en  : out std_logic;
@@ -59,10 +59,19 @@ entity execute is
     readdata  : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
     data_ack  : in  std_logic;
 
+    --memory-bus scratchpad-slave
+    sp_address   : in  std_logic_vector(log2(SCRATCHPAD_SIZE)-1 downto 0);
+    sp_byte_en   : in  std_logic_vector(REGISTER_SIZE/8 -1 downto 0);
+    sp_write_en  : in  std_logic;
+    sp_read_en   : in  std_logic;
+    sp_writedata : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
+    sp_readdata  : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    sp_ack  : out std_logic;
+
     external_interrupts : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
     pipeline_empty      : in  std_logic;
     ifetch_next_pc      : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
-    interrupt_pending   : out std_logic);
+    interrupt_pending   : buffer std_logic);
 
 
 end entity execute;
@@ -116,6 +125,9 @@ architecture behavioural of execute is
   signal rs1_data_fwd : std_logic_vector(REGISTER_SIZE-1 downto 0);
   signal rs2_data_fwd : std_logic_vector(REGISTER_SIZE-1 downto 0);
 
+  signal alu_rs1_data : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal alu_rs2_data : std_logic_vector(REGISTER_SIZE-1 downto 0);
+
   signal stall_to_lsu    : std_logic;
   signal ls_unit_waiting : std_logic;
 
@@ -124,13 +136,11 @@ architecture behavioural of execute is
   signal fwd_en   : std_logic;
   signal fwd_mux  : std_logic;
 
-  signal stall_from_lve   : std_logic;
-  signal lve_data1        : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal lve_data2        : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal lve_result       : std_logic_vector(REGISTER_SIZE-1 downto 0);
-  signal lve_result_valid : std_logic;
-  signal lve_source_valid : std_logic;
-  signal stall_to_lve     : std_logic;
+  signal stall_from_lve       : std_logic;
+  signal lve_alu_data1        : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal lve_alu_data2        : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal lve_alu_source_valid : std_logic;
+  signal stall_to_lve         : std_logic;
 
   signal valid_instr : std_logic;
   signal rd_latch    : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0);
@@ -155,7 +165,6 @@ architecture behavioural of execute is
   alias ni_rs1 : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0) is subseq_instr(19 downto 15);
   alias ni_rs2 : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0) is subseq_instr(24 downto 20);
 
-  constant SP_ADDRESS : unsigned(REGISTER_SIZE-1 downto 0) := x"80000000";
   constant LVE_ENABLE : boolean                            := SCRATCHPAD_SIZE /= 0;
 
   signal use_after_produce_stall      : std_logic;
@@ -183,6 +192,16 @@ begin
     rs2_data_fwd <=
     alu_data_out when ALU_FWD,
     rs2_data     when others;
+
+
+
+  alu_rs1_data <= rs1_data_fwd when not LVE_ENABLE else
+                  lve_alu_data1 when lve_alu_source_valid = '1' else
+                  alu_data_out  when rs1_mux = ALU_FWD else rs1_data;
+  alu_rs2_data <= rs2_data_fwd when not LVE_ENABLE else
+                  lve_alu_data2 when lve_alu_source_valid = '1' else
+                  alu_data_out  when rs2_mux = ALU_FWD else rs2_data;
+
 
 
   -------------------------------------------------------------------------------
@@ -262,7 +281,7 @@ begin
       end if;
 
       rd_latch_var := rd_latch;
-      if (ls_unit_waiting or stall_from_alu) = '0' then
+      if (ls_unit_waiting or stall_from_alu) = '0' and valid_input = '1' then
         rd_latch_var := rd;
         --load, csr_read, jal[r] are the only instructions that writeback but
         --don't forward. Of these only csr_read and loads don't flush the
@@ -304,7 +323,7 @@ begin
     end if;
   end process;
 
-  alu : component arithmetic_unit
+  alu : arithmetic_unit
     generic map (
       REGISTER_SIZE       => REGISTER_SIZE,
       SIGN_EXTENSION_SIZE => SIGN_EXTENSION_SIZE,
@@ -317,8 +336,8 @@ begin
       stall_to_alu       => stall_to_alu,
       stall_from_execute => stall_from_execute,
       valid_instr        => valid_instr,
-      rs1_data           => rs1_data_fwd,
-      rs2_data           => rs2_data_fwd,
+      rs1_data           => alu_rs1_data,
+      rs2_data           => alu_rs2_data,
       instruction        => instruction,
       sign_extension     => sign_extension,
       program_counter    => pc_current,
@@ -327,9 +346,9 @@ begin
       less_than          => less_than,
       stall_from_alu     => stall_from_alu,
 
-      lve_data1        => lve_data1,
-      lve_data2        => lve_data2,
-      lve_source_valid => lve_source_valid
+      lve_data1        => lve_alu_data1,
+      lve_data2        => lve_alu_data2,
+      lve_source_valid => lve_alu_source_valid
       );
 
 
@@ -356,7 +375,7 @@ begin
       br_taken_out   => br_taken_out,
       bad_predict    => br_bad_predict);
 
-  ls_unit : component load_store_unit
+  ls_unit : load_store_unit
     generic map(
       REGISTER_SIZE       => REGISTER_SIZE,
       SIGN_EXTENSION_SIZE => SIGN_EXTENSION_SIZE)
@@ -383,16 +402,16 @@ begin
 
   entire_pipeline_empty <= pipeline_empty and not valid_input;
 
-  syscall : component system_calls
+  syscall : system_calls
     generic map (
       REGISTER_SIZE     => REGISTER_SIZE,
       RESET_VECTOR      => RESET_VECTOR,
       ENABLE_EXCEPTIONS => ENABLE_EXCEPTIONS,
       COUNTER_LENGTH    => COUNTER_LENGTH)
     port map (
-      clk         => clk,
-      reset       => reset,
-      valid       => valid_instr,
+      clk   => clk,
+      reset => reset,
+      valid => valid_instr,
 
       stall_in => stall_to_syscall,
 
@@ -414,15 +433,8 @@ begin
       br_new_pc            => br_new_pc);
 
   enable_lve : if LVE_ENABLE generate
-    signal sp_read_en          : std_logic;
-    signal sp_write_en         : std_logic;
-    signal sp_read_data        : std_logic_vector(REGISTER_SIZE-1 downto 0);
-    signal sp_wait             : std_logic;
-    signal sp_ack              : std_logic;
-    signal use_scratchpad      : std_logic;
-    signal last_use_scratchpad : std_logic;
   begin
-    lve : component lve_top
+    lve : lve_top
       generic map (
         REGISTER_SIZE    => REGISTER_SIZE,
         SCRATCHPAD_SIZE  => SCRATCHPAD_SIZE,
@@ -437,65 +449,40 @@ begin
         stall_to_lve   => stall_to_lve,
         rs1_data       => rs1_data_fwd,
         rs2_data       => rs2_data_fwd,
-        slave_address  => ls_address,
+        slave_address  => sp_address,
         slave_read_en  => sp_read_en,
         slave_write_en => sp_write_en,
-        slave_byte_en  => ls_byte_en,
-        slave_data_in  => ls_write_data,
-        slave_data_out => sp_read_data,
-        slave_wait     => sp_wait,
+        slave_byte_en  => sp_byte_en,
+        slave_data_in  => sp_writedata,
+        slave_data_out => sp_readdata,
+        slave_ack      => sp_ack,
 
-        stall_from_lve   => stall_from_lve,
-        lve_data1        => lve_data1,
-        lve_data2        => lve_data2,
-        lve_source_valid => lve_source_valid,
-        lve_result       => alu_data_out,
-        lve_result_valid => alu_data_out_valid
+        stall_from_lve       => stall_from_lve,
+        lve_alu_data1        => lve_alu_data1,
+        lve_alu_data2        => lve_alu_data2,
+        lve_alu_source_valid => lve_alu_source_valid,
+        lve_alu_result       => alu_data_out,
+        lve_alu_result_valid => alu_data_out_valid
         );
 
-    -----------------------------------------------------------------------------
-    -- data bus splitter
-    -----------------------------------------------------------------------------
-
-    use_scratchpad <= ls_write_en or ls_read_en when
-                      (unsigned(ls_address) and not to_unsigned(SCRATCHPAD_SIZE-1, REGISTER_SIZE)) = SP_ADDRESS and LVE_ENABLE else '0';
-    process(clk)
-    begin
-      if rising_edge(clk) then
-
-        last_use_scratchpad <= use_scratchpad;
-        sp_ack              <= (not sp_wait and (ls_read_en or ls_write_en));
-      end if;
-    end process;
-    sp_read_en  <= use_scratchpad and ls_read_en;
-    sp_write_en <= use_scratchpad and ls_write_en;
-
-    ls_read_data <= sp_read_data when last_use_scratchpad = '1' else readdata;
-    ls_ack       <= sp_ack       when last_use_scratchpad = '1' else data_ack;
-
-    byte_en   <= ls_byte_en;
-    address   <= ls_address;
-    write_en  <= not use_scratchpad and ls_write_en;
-    read_en   <= not use_scratchpad and ls_read_en;
-    writedata <= ls_write_data;
   end generate enable_lve;
 
   n_enable_lve : if not LVE_ENABLE generate
     stall_from_lve <= '0';
 
-    ls_read_data <= readdata;
-    ls_ack       <= data_ack;
-
-    byte_en   <= ls_byte_en;
-    address   <= ls_address;
-    write_en  <= ls_write_en;
-    read_en   <= ls_read_en;
-    writedata <= ls_write_data;
-
-    lve_source_valid <= '0';
-    lve_data1        <= (others => '-');
-    lve_data2        <= (others => '-');
+    lve_alu_source_valid <= '0';
+    lve_alu_data1        <= (others => '-');
+    lve_alu_data2        <= (others => '-');
   end generate n_enable_lve;
+
+  ls_read_data <= readdata;
+  ls_ack       <= data_ack;
+
+  byte_en   <= ls_byte_en;
+  address   <= ls_address;
+  write_en  <= ls_write_en;
+  read_en   <= ls_read_en;
+  writedata <= ls_write_data;
 
 
 

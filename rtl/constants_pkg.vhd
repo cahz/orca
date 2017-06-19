@@ -10,7 +10,7 @@ package constants_pkg is
   --REGISTER NAMES
   constant REGISTER_NAME_SIZE : integer := 5;
 
-  constant REGISTER_ZERO : unsigned(REGISTER_NAME_SIZE-1 downto 0) := to_unsigned(1, REGISTER_NAME_SIZE);
+  constant REGISTER_ZERO : unsigned(REGISTER_NAME_SIZE-1 downto 0) := to_unsigned(0, REGISTER_NAME_SIZE);
   constant REGISTER_RA   : unsigned(REGISTER_NAME_SIZE-1 downto 0) := to_unsigned(1, REGISTER_NAME_SIZE);
   constant REGISTER_SP   : unsigned(REGISTER_NAME_SIZE-1 downto 0) := to_unsigned(2, REGISTER_NAME_SIZE);
   constant REGISTER_GP   : unsigned(REGISTER_NAME_SIZE-1 downto 0) := to_unsigned(3, REGISTER_NAME_SIZE);
@@ -82,6 +82,9 @@ package constants_pkg is
   constant CSR_MIP          : std_logic_vector(11 downto 0)  := x"344";
   constant CSR_MTIME        : std_logic_vector(11 downto 0)  := x"F01";
   constant CSR_MTIMEH       : std_logic_vector(11 downto 0)  := x"F81";
+  constant CSR_UTIME        : std_logic_vector(11 downto 0)  := x"C01";
+  constant CSR_UTIMEH       : std_logic_vector(11 downto 0)  := x"C81";
+
   --NON-STANDARD
   constant CSR_MEIMASK      : std_logic_vector(11 downto 0)  := x"7C0";
   constant CSR_MEIPEND      : std_logic_vector(11 downto 0)  := x"FC0";
@@ -89,7 +92,7 @@ package constants_pkg is
   constant CSR_MSTATUS_MIE  : integer                        := 3;
   constant CSR_MSTATUS_MPIE : integer                        := 7;
 
-  constant CSR_MCAUSE_MEXT    : integer := 16#8000000B#;
+  --constant CSR_MCAUSE_MEXT    : integer := 16#8000000B#;
   constant CSR_MCAUSE_ILLEGAL : integer := 2;
   constant CSR_MCAUSE_EBREAK  : integer := 3;
   constant CSR_MCAUSE_MECALL  : integer := 11;
@@ -150,4 +153,13 @@ package constants_pkg is
   constant ALU_f7 : std_logic_vector(6 downto 0) := "0000000";
 
   constant FENCE_I_BITS : std_logic_vector(31 downto 7) := x"0000"&"00010"&x"0";
+
+  constant LVE_VCMV_Z_FUNC3  : std_logic_vector(2 downto 0) := "011";
+  constant LVE_VCMV_NZ_FUNC3 : std_logic_vector(2 downto 0) := "100";
+
+  constant LVE_BYTE_SIZE : std_logic_vector(1 downto 0) := "01";
+  constant LVE_HALF_SIZE : std_logic_vector(1 downto 0) := "10";
+  constant LVE_WORD_SIZE : std_logic_vector(1 downto 0) := "11";
+
+
 end package constants_pkg;

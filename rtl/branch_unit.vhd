@@ -91,7 +91,7 @@ begin  -- architecture
   sub <= op1 - op2;
 
   eq_flg  <= '1' when op1 = op2 else '0';
-  leq_flg <= less_than;
+  leq_flg <= sub(sub'left);
 
   with func3 select
     branch_taken <=

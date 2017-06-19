@@ -267,6 +267,62 @@
          type = "String";
       }
    }
+   element system_avalon
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system_avalon
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system_avalon
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system_avalon
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system_avalon
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system_avalon
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system_avalon
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
    element vblox1
    {
       datum _originalDeviceFamily
@@ -398,7 +454,7 @@
   <parameter name="PIPELINE_STAGES" value="5" />
   <parameter name="REGISTER_SIZE" value="32" />
   <parameter name="RESET_VECTOR" value="512" />
-  <parameter name="SCRATCHPAD_SIZE" value="1024" />
+  <parameter name="SCRATCHPAD_SIZE" value="64" />
   <parameter name="SHIFTER_MAX_CYCLES" value="32" />
  </module>
  <connection
@@ -422,6 +478,15 @@
  <connection
    kind="avalon"
    version="15.1"
+   start="vectorblox_orca_0.data"
+   end="vectorblox_orca_0.scratch">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x80000000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="15.1"
    start="vectorblox_orca_0.instruction"
    end="onchip_memory2_0.s2">
   <parameter name="arbitrationPriority" value="1" />
@@ -431,7 +496,7 @@
  <connection
    kind="clock"
    version="15.1"
-   start="clock_gen_0.clk_3x"
+   start="clock_gen_0.clk_2x"
    end="vectorblox_orca_0.scratchpad_clk" />
  <connection
    kind="clock"

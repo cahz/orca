@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 SCRIPTDIR=$(dirname $0)
 
 if which mif2hex >/dev/null

@@ -7,6 +7,7 @@ use STD.TEXTIO.all;
 library work;
 use work.utils.all;
 use work.constants_pkg.all;
+use work.rv_components.all;
 
 entity lve_top is
   generic(
@@ -24,32 +25,23 @@ entity lve_top is
     rs1_data       : in std_logic_vector(REGISTER_SIZE-1 downto 0);
     rs2_data       : in std_logic_vector(REGISTER_SIZE-1 downto 0);
 
-    slave_address  : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
+    slave_address  : in  std_logic_vector(log2(SCRATCHPAD_SIZE)-1 downto 0);
     slave_read_en  : in  std_logic;
     slave_write_en : in  std_logic;
     slave_byte_en  : in  std_logic_vector(SLAVE_DATA_WIDTH/8 -1 downto 0);
     slave_data_in  : in  std_logic_vector(SLAVE_DATA_WIDTH-1 downto 0);
     slave_data_out : out std_logic_vector(SLAVE_DATA_WIDTH-1 downto 0);
-    slave_wait     : out std_logic;
+    slave_ack      : out std_logic;
 
-    stall_from_lve   : out    std_logic;
-    lve_data1        : out    std_logic_vector(REGISTER_SIZE-1 downto 0);
-    lve_data2        : out    std_logic_vector(REGISTER_SIZE-1 downto 0);
-    lve_source_valid : buffer std_logic;
-    lve_result       : in     std_logic_vector(REGISTER_SIZE-1 downto 0);
-    lve_result_valid : in     std_logic
+    stall_from_lve       : out    std_logic;
+    lve_alu_data1        : buffer std_logic_vector(REGISTER_SIZE-1 downto 0);
+    lve_alu_data2        : buffer std_logic_vector(REGISTER_SIZE-1 downto 0);
+    lve_alu_source_valid : out    std_logic;
+    lve_alu_result       : in     std_logic_vector(REGISTER_SIZE-1 downto 0);
+    lve_alu_result_valid : in     std_logic
     );
 end entity;
 
 architecture rtl of lve_top is
-
 begin
-  slave_data_out <= (others => '0');
-  slave_wait     <= '0';
-
-  stall_from_lve   <= '0';
-  lve_data1        <= (others => '0');
-  lve_data2        <= (others => '0');
-  lve_source_valid <= '0';
-
 end architecture;

@@ -570,14 +570,14 @@
   <parameter name="BTB_SIZE" value="0" />
   <parameter name="BUS_TYPE" value="Avalon" />
   <parameter name="COUNTER_LENGTH" value="64" />
-  <parameter name="DIVIDE_ENABLE" value="0" />
+  <parameter name="DIVIDE_ENABLE" value="1" />
   <parameter name="ENABLE_EXCEPTIONS" value="1" />
   <parameter name="EXT_INTERRUPTS" value="0" />
   <parameter name="LVE_ENABLE" value="0" />
   <parameter name="MULTIPLY_ENABLE" value="1" />
-  <parameter name="PIPELINE_STAGES" value="4" />
+  <parameter name="PIPELINE_STAGES" value="5" />
   <parameter name="REGISTER_SIZE" value="32" />
-  <parameter name="RESET_VECTOR" value="512" />
+  <parameter name="RESET_VECTOR" value="0" />
   <parameter name="SCRATCHPAD_SIZE" value="1024" />
   <parameter name="SHIFTER_MAX_CYCLES" value="1" />
  </module>

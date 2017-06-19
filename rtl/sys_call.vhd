@@ -148,7 +148,7 @@ begin  -- architecture rtl
   --         MEIPEND  (external interrupt
   -----------------------------------------------------------------------------
 
-  instr_check : component instruction_legal
+  instr_check : instruction_legal
     generic map (
       check_legal_instructions => true)
     port map (
@@ -181,6 +181,9 @@ begin  -- architecture rtl
     meipend         when CSR_MEIPEND,
     mtime           when CSR_MTIME,
     mtimeh          when CSR_MTIMEH,
+    mtime           when CSR_UTIME,
+    mtimeh          when CSR_UTIMEH,
+
     (others => '0') when others;
 
   bit_sel <= rs1_data;

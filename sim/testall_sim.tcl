@@ -22,7 +22,7 @@ foreach f $files {
 		  #some of the unit tests may have to run for a much longer time
 		  run 60 us
 	 } else {
-		  run 15 us
+		  run 30 us
 	 }
 	 set v [examine -radix decimal /system/vectorblox_orca_0/core/D/register_file_1/t3]
 	 set passfail  ""
