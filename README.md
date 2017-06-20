@@ -19,18 +19,22 @@ have included a linked a specific version of the toolchain to this repository. I
 may have mixed results. Follow the instructions provided in tools/riscv-toolchain to build the supported toolchain.
 
 
-
 Sample Systems
 --------------
 
-We have provided a sample system targeting the DE2-115 found in the TPad or Veek development systems as an example design.
+We have provided a sample system targeting the DE2-115 found in the TPad or Veek development systems as an example design using
+the Altera toolchain. It is located de2-115 directory.
+
+A sample system using the Lattice iCEcube2 toolchain is located in the ice40ultra directory. It targets the iCE5LP4K chip.
+
+In the sf2plus directory is a Microsemi SmartFusion2 sample project that targets the M2S150-FC1152 chip. It is built using the
+Libero toolchain.
+
+The zedboard directory contains a Xilinx sample project that targets the Zynq-7000 XC7Z020-CLG484-1 SoC. It is built using the 
+Vivado toolchain. 
 
 In addition to this example system we provide a system targeting a simulator such as modelsim. We use QSYS to help maintain
-theses systems.
-
-We have also had success with building systems using the Libero toolchain from Microsemi and the IceCube2 toolchain from lattice,
-but have not provided example systems as of yet.
-
+these systems.
 
 
 Configuring ORCA
@@ -39,7 +43,6 @@ Configuring ORCA
 Below is an overview of the various generics exposed from the top level to configure ORCA.
 
 ### BUS TYPE
-
 
 There are three generics (`AVALON_ENABLE` ,  `WISHBONE_ENABLE` , `AXI_ENABLE` ) of which only one must
 be set to one. An Assertion will be thrown if more than one is enabled. From the QSYS Configuration

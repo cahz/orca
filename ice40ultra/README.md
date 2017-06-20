@@ -12,7 +12,7 @@ while running "./configure" run it with the following options:-
     
 Note that because this core only implements RV32I them makefile uses some gcc flags to make 
 sure the compiler does not generate any unimplemented instructions, notably `-m32 -march=RV32I`. 
-When you write your own software be sure to use these flags.The Makefile is fairly straight forward 
+When you write your own software be sure to use these flags. The Makefile is fairly straight forward 
 to read and see how this works
 
 

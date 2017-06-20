@@ -45,26 +45,23 @@ $(PROJ_NAME).bit: $(IMPL_LOG)
 $(MMI_FILE): $(IMPL_LOG) 
 	echo "mmi_wrapper $(PROJ_DIR) $(PROJ_NAME) $(BRAM_NAME)" | $(VIVADO) -source $(MMI_TCL)
 
-bits: $(PROJ_NAME).bit $(MMI_FILE) 
+$(ELF_FILE):
 	make -C $(SW_DIR)
+
+bits: $(PROJ_NAME).bit $(MMI_FILE) $(ELF_FILE)
 	updatemem -force --meminfo $(MMI_FILE) \
   	--data $(ELF_FILE) \
   	--bit $(PROJ_NAME).bit \
   	--proc dummy \
   	--out $(OUT_BIT) 
 
-bitstream: 
-	make -C $(SW_DIR)
+bitstream: $(ELF_FILE)
 	updatemem -force --meminfo $(MMI_FILE) \
   	--data $(ELF_FILE) \
   	--bit $(GUI_BIT) \
   	--proc dummy \
   	--out $(OUT_BIT) 
 
-pgm:
-	echo "pgm_wrapper $(PROJ_DIR) $(PROJ_NAME) $(OUT_BIT)" | $(VIVADO) -source $(PGM_TCL)
-
-
-
 clean:
 	rm -rf $(PROJ_DIR) $(PROJ_NAME).bit $(OUT_BIT) $(MMI_FILE) 
+	make clean -C $(SW_DIR) 
