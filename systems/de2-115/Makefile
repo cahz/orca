@@ -47,10 +47,10 @@ ifdef ENABLE_EXCEPTIONS
 	sed -i 's|parameter name="ENABLE_EXCEPTIONS" value=".*" />|parameter name="ENABLE_EXCEPTIONS" value=$(ENABLE_EXCEPTIONS) />|' $(QSYS_FILE)
 endif
 
-$(QIP_FILE):$(QSYS_FILE) ../rtl/orca_hw.tcl
+$(QIP_FILE):$(QSYS_FILE) ../../rtl/orca_hw.tcl
 	qsys-generate --synthesis=VHDL system.qsys 2>&1 | tee ./system.qsys.log
 
-$(ORCA_SUBMODULE_FILES): system/synthesis/submodules/vblox_orca/% : ../rtl/% | $(QIP_FILE)
+$(ORCA_SUBMODULE_FILES): system/synthesis/submodules/vblox_orca/% : ../../rtl/% | $(QIP_FILE)
 	 cp $^ $@
 
 .phony: copy-files

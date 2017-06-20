@@ -1,1 +1,1 @@
-../../rtl/microsemi_wrapper.vhd
+../../../rtl/microsemi_wrapper.vhd

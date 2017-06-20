@@ -1,1 +1,1 @@
-../../rtl/components.vhd
+../../../rtl/components.vhd

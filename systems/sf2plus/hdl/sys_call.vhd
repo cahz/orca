@@ -1,1 +1,1 @@
-../../rtl/sys_call.vhd
+../../../rtl/sys_call.vhd

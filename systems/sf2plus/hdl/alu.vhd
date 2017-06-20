@@ -1,1 +1,1 @@
-../../rtl/alu.vhd
+../../../rtl/alu.vhd

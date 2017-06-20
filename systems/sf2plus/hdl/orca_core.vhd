@@ -1,1 +1,1 @@
-../../rtl/orca_core.vhd
+../../../rtl/orca_core.vhd

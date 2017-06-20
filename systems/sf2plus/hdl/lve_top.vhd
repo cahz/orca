@@ -1,1 +1,1 @@
-../../rtl/lve_top.vhd
+../../../rtl/lve_top.vhd

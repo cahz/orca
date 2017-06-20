@@ -1,1 +1,1 @@
-../../rtl/iram_microsemi.vhd
+../../../rtl/iram_microsemi.vhd

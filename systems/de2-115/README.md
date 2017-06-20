@@ -13,7 +13,7 @@ Now Run Processing->Start Compilation from the menubar, this should build
 
 ### Software
 
-Build the software at `GIT_TOP/de2-115/software/` then with the script `tools/elf2hex.sh` convert the elf file to a hex file that quartus can
+Build the software at `GIT_TOP/de2-115/software/` then with the script `GIT_TOP/tools/elf2hex.sh` convert the elf file to a hex file that quartus can
 understand. Copy that hex file to this directory and call it test.hex.
 
 ### Makefiles

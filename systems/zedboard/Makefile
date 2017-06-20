@@ -48,12 +48,16 @@ $(MMI_FILE): $(IMPL_LOG)
 $(ELF_FILE):
 	make -C $(SW_DIR)
 
-bits: $(PROJ_NAME).bit $(MMI_FILE) $(ELF_FILE)
+$(OUT_BIT): $(PROJ_NAME).bit $(MMI_FILE) $(ELF_FILE)
 	updatemem -force --meminfo $(MMI_FILE) \
   	--data $(ELF_FILE) \
   	--bit $(PROJ_NAME).bit \
   	--proc dummy \
   	--out $(OUT_BIT) 
+
+pgm: $(OUT_BIT)
+	echo "pgm_bits $(PROJ_DIR) $(PROJ_NAME)" | $(VIVADO) -source $(PGM_TCL)
+
 
 bitstream: $(ELF_FILE)
 	updatemem -force --meminfo $(MMI_FILE) \

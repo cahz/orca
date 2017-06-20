@@ -1,1 +1,1 @@
-../../rtl/load_store_unit.vhd
+../../../rtl/load_store_unit.vhd
