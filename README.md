@@ -16,7 +16,10 @@ Building Toolchain
 
 The official RISC-V toolchain is under active development, and is subject to breaking changes from time to time. Because of that we
 have included a linked a specific version of the toolchain to this repository. If you use a different version of the toolchain, you
-may have mixed results. Follow the instructions provided in tools/riscv-toolchain to build the supported toolchain.
+may have mixed results.
+
+To build the toolchain, set `RISCV_INSTALL` to be the destination directory for the toolchain, then run 
+`GIT_TOP/tools/riscv-toolchain/build-toolchain.sh`.
 
 
 Sample Systems
