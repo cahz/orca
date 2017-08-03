@@ -1,0 +1,4 @@
+*.sopcinfo
+transcript
+*.elf
+*.dump
