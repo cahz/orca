@@ -1,0 +1,7 @@
+idram_gen.mmi
+
+project/
+*.bit
+
+software/hex_to_coe
+

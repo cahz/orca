@@ -1,0 +1,36 @@
+Microsemi Corporation - Microsemi Libero Software Release v11.7 SP3 (Version 11.7.3.8)
+
+Date      :  Wed Jun 28 13:57:59 2017
+Project   :  /nfs/home/ryan/orca/systems/sf2plus
+Component :  my_mss
+Family    :  SmartFusion2
+
+
+HDL source files for all Synthesis and Simulation tools:
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/COREAHBTOAPB3/3.1.100/rtl/vlog/core/coreahbtoapb3.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/COREAHBTOAPB3/3.1.100/rtl/vlog/core/coreahbtoapb3_ahbtoapbsm.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/COREAHBTOAPB3/3.1.100/rtl/vlog/core/coreahbtoapb3_apbaddrdata.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/COREAHBTOAPB3/3.1.100/rtl/vlog/core/coreahbtoapb3_penablescheduler.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreAHBLite/5.2.100/rtl/vlog/core/coreahblite.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreAHBLite/5.2.100/rtl/vlog/core/coreahblite_addrdec.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreAHBLite/5.2.100/rtl/vlog/core/coreahblite_defaultslavesm.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreAHBLite/5.2.100/rtl/vlog/core/coreahblite_masterstage.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreAHBLite/5.2.100/rtl/vlog/core/coreahblite_matrix4x16.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreAHBLite/5.2.100/rtl/vlog/core/coreahblite_slavearbiter.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreAHBLite/5.2.100/rtl/vlog/core/coreahblite_slavestage.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreAPB3/4.1.100/rtl/vlog/core/coreapb3.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreAPB3/4.1.100/rtl/vlog/core/coreapb3_iaddr_reg.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreAPB3/4.1.100/rtl/vlog/core/coreapb3_muxptob3.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreResetP/7.1.100/rtl/vlog/core/coreresetp.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreResetP/7.1.100/rtl/vlog/core/coreresetp_pcie_hotreset.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/DirectCore/CoreSF2Config/3.0.100/rtl/vlog/core/coresf2config.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/work/my_mss/CCC_0/my_mss_CCC_0_FCCC.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/work/my_mss/FABOSC_0/my_mss_FABOSC_0_OSC.v
+    /nfs/home/ryan/orca/systems/sf2plus/component/work/my_mss/my_mss.v
+
+HDL source files for Synopsys SynplifyPro Synthesis tool:
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/SgCore/OSC/2.0.101/osc_comps.v
+
+HDL source files for Mentor Precision Synthesis tool:
+    /nfs/home/ryan/orca/systems/sf2plus/component/Actel/SgCore/OSC/2.0.101/osc_comps_pre.v
+

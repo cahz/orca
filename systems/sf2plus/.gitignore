@@ -1,0 +1,14 @@
+*~
+*.log
+*.bak
+*.swp
+tags
+.nfs*
+.pyc
+
+designer/
+simulation/
+stimulus/
+synthesis/
+tooldata/
+component/Actel/

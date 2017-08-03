@@ -1,0 +1,47 @@
+# ##############################################################################
+
+# iCEcube PCF
+
+# Version:            2015.04.27409
+
+# File Generated:     Jan 12 2016 16:25:29
+
+# Family & Device:    iCE5LP4K
+
+# Package:            SWG36
+
+# ##############################################################################
+
+###MergeFF List 12
+set_io_ff gpio[0] -in ON
+set_io_ff gpio[10] -in ON
+set_io_ff gpio[11] -in ON
+set_io_ff gpio[1] -in ON
+set_io_ff gpio[2] -in ON
+set_io_ff gpio[3] -in ON
+set_io_ff gpio[4] -in ON
+set_io_ff gpio[5] -in ON
+set_io_ff gpio[6] -in ON
+set_io_ff gpio[7] -in ON
+set_io_ff gpio[8] -in ON
+set_io_ff gpio[9] -in ON
+
+###IOSet List 18
+set_io clk C2
+set_io cts B1
+set_io gpio[0] E2  -pullup yes
+set_io gpio[1] F3	 -pullup yes
+set_io gpio[10] D6 -pullup yes
+set_io gpio[11] E6 -pullup yes
+set_io gpio[2] E3	 -pullup yes
+set_io gpio[3] F4	 -pullup yes
+set_io gpio[4] E4	 -pullup yes
+set_io gpio[5] F5	 -pullup yes
+set_io gpio[6] E5	 -pullup yes
+set_io gpio[7] B4	 -pullup yes
+set_io gpio[8] B5	 -pullup yes
+set_io gpio[9] D5  -pullup yes
+set_io reset_btn F6 -pullup yes
+set_io rts D2
+set_io rxd C1
+set_io txd B2
