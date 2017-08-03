@@ -1,0 +1,8 @@
+SEPERATE_MEM_GEN_dmem.ram.ram3_ram3_0_1 init_00.dmem
+SEPERATE_MEM_GEN_dmem.ram.ram3_ram3_0_0 init_01.dmem
+SEPERATE_MEM_GEN_dmem.ram.ram2_ram2_0_1 init_02.dmem
+SEPERATE_MEM_GEN_dmem.ram.ram2_ram2_0_0 init_03.dmem
+SEPERATE_MEM_GEN_dmem.ram.ram1_ram1_0_1 init_04.dmem
+SEPERATE_MEM_GEN_dmem.ram.ram1_ram1_0_0 init_05.dmem
+SEPERATE_MEM_GEN_dmem.ram.ram0_ram0_0_1 init_06.dmem
+SEPERATE_MEM_GEN_dmem.ram.ram0_ram0_0_0 init_07.dmem

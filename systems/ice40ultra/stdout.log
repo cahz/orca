@@ -1,0 +1,79 @@
+Running in Lattice mode
+
+
+Starting:    /nfs/opt/lattice/iCEcube2/2017.01/synpbase/linux_a_64/mbin/synbatch
+Install:     /nfs/opt/lattice/iCEcube2/2017.01/synpbase
+Hostname:    avx
+Date:        Fri Jun 30 08:20:41 2017
+Version:     L-2016.09L+ice40
+
+Arguments:   -product synplify_pro -batch ice40ultra_syn.prj
+ProductType: synplify_pro
+
+
+
+
+
+auto_infer_blackbox is not supported in current product.
+log file: "/nfs/home/ryan/orca/systems/ice40ultra/ice40ultra_Implmnt/ice40ultra.srr"
+Running: ice40ultra_Implmnt in foreground
+
+Running ice40ultra_syn|ice40ultra_Implmnt
+
+Running: compile (Compile) on ice40ultra_syn|ice40ultra_Implmnt
+# Fri Jun 30 08:20:41 2017
+
+Running: compile_flow (Compile Process) on ice40ultra_syn|ice40ultra_Implmnt
+# Fri Jun 30 08:20:41 2017
+
+Running: compiler (Compile Input) on ice40ultra_syn|ice40ultra_Implmnt
+# Fri Jun 30 08:20:41 2017
+Copied /nfs/home/ryan/orca/systems/ice40ultra/ice40ultra_Implmnt/synwork/ice40ultra_comp.srs to /nfs/home/ryan/orca/systems/ice40ultra/ice40ultra_Implmnt/ice40ultra.srs
+
+compiler completed
+# Fri Jun 30 08:20:46 2017
+
+Return Code: 0
+Run Time:00h:00m:05s
+
+Running: multi_srs_gen (Multi-srs Generator) on ice40ultra_syn|ice40ultra_Implmnt
+# Fri Jun 30 08:20:46 2017
+
+multi_srs_gen completed
+# Fri Jun 30 08:20:47 2017
+
+Return Code: 0
+Run Time:00h:00m:01s
+Copied /nfs/home/ryan/orca/systems/ice40ultra/ice40ultra_Implmnt/synwork/ice40ultra_mult.srs to /nfs/home/ryan/orca/systems/ice40ultra/ice40ultra_Implmnt/ice40ultra.srs
+Complete: Compile Process on ice40ultra_syn|ice40ultra_Implmnt
+
+Running: premap (Pre-mapping) on ice40ultra_syn|ice40ultra_Implmnt
+# Fri Jun 30 08:20:47 2017
+
+premap completed with warnings
+# Fri Jun 30 08:20:48 2017
+
+Return Code: 1
+Run Time:00h:00m:01s
+Complete: Compile on ice40ultra_syn|ice40ultra_Implmnt
+
+Running: map (Map) on ice40ultra_syn|ice40ultra_Implmnt
+# Fri Jun 30 08:20:48 2017
+License granted for 4 parallel jobs
+
+Running: fpga_mapper (Map & Optimize) on ice40ultra_syn|ice40ultra_Implmnt
+# Fri Jun 30 08:20:48 2017
+Copied /nfs/home/ryan/orca/systems/ice40ultra/ice40ultra_Implmnt/synwork/ice40ultra_m.srm to /nfs/home/ryan/orca/systems/ice40ultra/ice40ultra_Implmnt/ice40ultra.srm
+
+fpga_mapper completed with warnings
+# Fri Jun 30 08:21:01 2017
+
+Return Code: 1
+Run Time:00h:00m:13s
+Complete: Map on ice40ultra_syn|ice40ultra_Implmnt
+Complete: Logic Synthesis on ice40ultra_syn|ice40ultra_Implmnt
+
+exit status=0
+
+exit status=0
+
