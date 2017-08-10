@@ -15,6 +15,8 @@ cd $BUILD_DIR
 
 BINUTILS_VERSION=2.28
 GCC_VERSION=7.1.0
+set -e
+set -o pipefail
 
 [ ! -f binutils-$BINUTILS_VERSION.tar.gz ] && wget http://ftpmirror.gnu.org/binutils/binutils-$BINUTILS_VERSION.tar.gz
 [ ! -f gcc-$GCC_VERSION.tar.gz ] && wget http://ftpmirror.gnu.org/gcc/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.gz
@@ -55,7 +57,7 @@ fi
 	 rm -rf build-binutils
 	 mkdir build-binutils
 	 cd build-binutils
-	 ../binutils-$BINUTILS_VERSION/configure --prefix=$RISCV_INSTALL --with-abi=ilp32 --target=riscv32-unknown-elf --disable-multilib
+	 ../binutils-$BINUTILS_VERSION/configure --prefix=$RISCV_INSTALL --with-abi=ilp32 --with-arch=rv32im --target=riscv32-unknown-elf --disable-multilib
 	 make -j$(( `nproc` * 2))
 	 make install
 )
@@ -65,7 +67,7 @@ fi
 	 rm -rf build-gcc
 	 mkdir -p build-gcc
 	 cd build-gcc
-	 ../gcc-$GCC_VERSION/configure --prefix=$RISCV_INSTALL --target=riscv32-unknown-elf --with-abi=ilp32 --enable-languages=c,c++ --disable-multilib
+	 ../gcc-$GCC_VERSION/configure --prefix=$RISCV_INSTALL --target=riscv32-unknown-elf --with-abi=ilp32 --with-arch=rv32im --enable-languages=c,c++ --disable-multilib
 	 make -j$(( `nproc` * 2))  all-gcc
 	 make install-gcc
 	 make -j$(( `nproc` * 2))  all-target-libgcc
