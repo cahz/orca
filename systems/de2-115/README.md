@@ -1,22 +1,70 @@
-
-These instructions assume that you are using a linux machine, all other platforms are untested and will probably fail.
+These instructions assume that you are using Linux and GNU make, all other
+platforms are untested.  This system targets a DE2-115 development board, and
+can be run on the Tpad or Veek development boards which use a DE2-115 as their
+base.
 
 ## Building
 
-With Quartus 15.0 open the file `system.qpf`. There should be a warning about a file called system.qip not being found.
+The build process can be done completely from the command line by the included
+Makefile (just run `make`).  Alternatively, running `make gui-quartus` will
+create the project and open Quartus so you can use the GUI tools from there.
 
-From the menubar open Tools->Qsys, and with qsys open the file `GIT_TOP/de2-115/system.qsys`. When Qsys is done opening this file, click on the riscv component,
-you should be able to see the various configuration options. Now from the menubar, click Generate->Geneate HDL .
-Once the HDL generation has completed, close Qsys, and reopen `system.qpf` in quartus. The warning about system.qip should no longer be there.
+If you wish to modify the QSYS system (e.g. to change the ORCA parameters or add
+another peripheral) you can run `make gui-qsys` to create the QSYS system and
+open the QSYS GUI.  After saving changes you've made run either `make` to build
+the system on the command line or `make gui-quartus` to generate the QSYS system
+and then open Quartus.
 
-Now Run Processing->Start Compilation from the menubar, this should build
 
-### Software
+## Programming
 
-Build the software at `GIT_TOP/de2-115/software/` then with the script `GIT_TOP/tools/elf2hex.sh` convert the elf file to a hex file that quartus can
-understand. Copy that hex file to this directory and call it test.hex.
+The Makefile includes pgm and run targets.  `make pgm` will download the
+bitstream to the board.  `make run` will load the program built from the
+software/ directory into instruction memory and reset the processor.
 
-### Makefiles
 
-If you have created the test.hex in this directory as described in the above section, you should be able to simply run `make` in this directory and everything
-should build correctly and system.sof will be a bitstream able to download on a de2-115 developement board.
+## Changing Only ORCA Parameters
+
+If you wish to make a system with only changes to ORCA parameters you can do so
+by passing the parameters to the Makefile.  If an optional `config.mk` file
+exists it will be included in the Makefile and is a good place to put these
+parameters.  For instance, to set `PIPELINE_STAGES` to 4, add the line
+`PIPELINE_STAGES=4` to `config.mk`.
+
+
+## Software
+
+The `software/` directory is built using make.  Running make in the software
+directory builds the .coe file needed for simulation and initializing the BRAMs
+on power-up.  The de2-115 Makefile automatically builds the .coe file when
+initializing the project or simulation.
+
+To run and debug new programs use the `make run` command which will download the
+program over JTAG.  This runs a script which holds the processor in reset,
+downloads the new program, then releases the reset to allow the program to run.
+
+See README.md in the software directory for instructions on building software.
+
+
+## Simulation
+
+To simulate, start by running `make sim`.  This builds a QSYS testbench and
+launches Modelsim.  A set of `add_wave_*` commands are provided to add all the
+signals in certain ORCA units (e.g. `add_wave_instruction_fetch`).  The command
+`add_wave_all` will add all ORCA signals to the waveform.
+
+
+## Block RAM Initialization
+
+Block RAMs are initialized by the file in software/test.hex for running at
+startup.  Currently to update the BRAMs the entire build script needs to be
+rerun; as such the dependency between software/test.hex and the bitstream is not
+included in the Makefile.  The design flow that works best currently is to debug
+programs using `make run` to load them at run-time and only after the program is
+ready for deployment re-make the bitstream from scratch (`make clean && make`)
+to initialize the BRAMs.
+
+It should be possible to update the BRAM contents after bitstream generation; we
+are working towards a robust BRAM initialization script in a future release.
+
+

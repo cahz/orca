@@ -1,0 +1,8 @@
+/simulate_*.tcl
+/testall_*.tcl
+/sim_waves_system_*.tcl
+/system_*/
+/csmith-compile
+/.qsys_edit/
+/riscv-tests/
+/test/

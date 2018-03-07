@@ -1,0 +1,2 @@
+DEVICE_FAMILY := Cyclone IV E
+DEVICE        := EP4CE115F29C7

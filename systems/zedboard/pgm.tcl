@@ -1,13 +1,17 @@
-proc pgm_bits {proj_dir proj_name} {
-	open_project $proj_dir/$proj_name.xpr
-	open_hw
-	connect_hw_server
-	open_hw_target
-	set_property PROGRAM.FILE {out.bit} [get_hw_devices xc7z020_1]
-	set_property PROBES.FILE {} [get_hw_devices xc7z020_1]
-	set_property FULL_PROBES.FILE {} [get_hw_devices xc7z020_1]
-	current_hw_device [get_hw_devices xc7z020_1]
-	refresh_hw_device -update_hw_probes false [lindex [get_hw_devices xc7z020_1] 0]
-	program_hw_devices [lindex [get_hw_devices xc7z020_1] 0]
-	close_project
-}
+#Connect
+connect
+
+#Reset the PS
+target -set -filter {name =~ "APU"}
+catch { stop } error
+rst
+
+#Initialize processing system
+#Normally this is ps7_init.tcl
+source [lindex $argv 1]
+ps7_init
+ps7_post_config
+
+#Program the bitstream
+target -set -filter {name =~ "xc7z*"}
+fpga [lindex $argv 0]

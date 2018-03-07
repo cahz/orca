@@ -144,8 +144,9 @@ set_interface_assignment avalon_slave embeddedsw.configuration.isPrintableDevice
 # 
 add_interface reset_source reset start
 set_interface_property reset_source associatedClock clock
+set_interface_property reset_source associatedReset reset
 set_interface_property reset_source associatedDirectReset ""
-set_interface_property reset_source associatedResetSinks ""
+set_interface_property reset_source associatedResetSinks reset
 set_interface_property reset_source synchronousEdges DEASSERT
 set_interface_property reset_source ENABLED true
 set_interface_property reset_source EXPORT_OF ""

@@ -1,0 +1,24 @@
+# Files in dependency order for Modelsim
+utils.vhd
+constants_pkg.vhd
+components.vhd
+register_file.vhd
+alu.vhd
+branch_unit.vhd
+load_store_unit.vhd
+sys_call.vhd
+vcp_handler.vhd
+instruction_fetch.vhd
+decode.vhd
+execute.vhd
+orca_core.vhd
+bram_sdp_write_first.vhd
+oimm_throttler.vhd
+oimm_register.vhd
+cache.vhd
+cache_controller.vhd
+a4l_master.vhd
+axi_master.vhd
+cache_mux.vhd
+memory_interface.vhd
+orca.vhd

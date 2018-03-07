@@ -1,0 +1,137 @@
+#!/usr/bin/env python2.7
+try:
+    import mpsse
+except ImportError as e:
+    import sys
+    sys.stderr.write("Need mpsse module, available at: "+
+               "https://code.google.com/archive/p/libmpsse/\n")
+    sys.exit(-1)
+
+def command(func):
+    def func_wrapper(self,*args,**kwargs):
+        self.dev.Start()
+        ret=func(self,*args,**kwargs)
+        self.dev.Stop()
+        return ret
+    return func_wrapper
+
+class flash_device():
+    def __init__(self):
+        self.dev=mpsse.MPSSE(mpsse.SPI0, mpsse.THIRTY_MHZ, mpsse.MSB)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self,type, value, traceback):
+        self.Close()
+    def Close(self):
+        "Should call close when done with flash device"
+        self.dev.Close()
+
+    @staticmethod
+    def _addr_str(address):
+        "Takes a 24bit address and returns a string"
+        return (chr((address>>16)&0xFF)+
+                chr((address>>8)&0xFF)+
+                chr(address&0xFF))
+
+    @command
+    def write_enable(self):
+        "Enables Writes on Flash, probably don't need to use this directly"
+        self.dev.Write("\x06")
+
+    @command
+    def write_disable(self):
+        "Disables Writes on Flash, probably don't need to use this directly"
+        self.dev.Write("\x04")
+    @command
+    def SectorErase(self,address):
+        str_addr=flash_device._addr_str(address)
+        self.dev.Write("\xd8"+str_addr)
+
+    @command
+    def ReadData(self,address,length):
+        self.dev.Write("\x03"+flash_device._addr_str(address))
+        data= self.dev.Read(length)
+        return data
+
+    @command
+    def ReadStatus(self):
+        self.dev.Write("\x05")
+        data=self.dev.Read(10)
+        return ord(data[-1])
+
+    @command
+    def ReadFlagStatus(self):
+        data=self.dev.Transfer("\x70\0\0\0\0\0\0")
+        return ord(data[-1])
+
+    @command
+    def ReadID(self):
+        self.dev.Write("\xAB")
+        data=self.dev.Read(10)
+        return data
+
+    @command
+    def WritePage(self,page_num,data):
+        "Writes the data to the page, page_num is address >>8. len(data) must be <=256"
+        page_num = flash_device._addr_str(page_num<<8)
+        self.dev.Transfer("\x02"+page_num+data)
+
+    @command
+    def _bulk_erase(self):
+        "Helper that does the actual bulk erase, Users should use BulkErase()"
+        self.dev.Transfer("\xC7")
+
+
+    def BulkErase(self):
+        "Erase entire chip"
+        self.write_enable()
+        self._bulk_erase()
+        while flash.WriteInProgress():
+            pass
+
+    def WriteInProgress(self):
+        "Returns true if there is a write in progress"
+        return (not self.ReadFlagStatus() == 128)
+
+    def WriteData(self,addr,data):
+        """
+        Writes the data to the chip starting at addr.
+        addr must have lower 8 bits clear, though this restriction may be relaxed in the future.
+        This fuction automatically handles writing to multiple pages.
+        """
+
+        assert addr&0xFF == 0
+        while len(data) > 256:
+            self.write_enable()
+            self.WritePage(addr>>8,data[:256])
+            addr+=256
+            data=data[256:]
+            while self.WriteInProgress():
+                pass
+        self.write_enable()
+        self.WritePage(addr>>8,data)
+        while self.WriteInProgress():
+            pass
+
+
+
+
+if __name__ == '__main__':
+    import sys
+    import argparse
+
+    import time
+
+    parser=argparse.ArgumentParser()
+    parser.add_argument('file',help="File to program into spi flash chip.")
+    args=parser.parse_args()
+    with flash_device() as flash:
+        flash.BulkErase()
+        data=open(args.file).read()
+        flash.WriteData(0,data)
+        check_data= flash.ReadData(0,len(data))
+        if check_data != data:
+            sys.stderr.write("Data Verification Failed\n")
+            sys.exit(-1)
