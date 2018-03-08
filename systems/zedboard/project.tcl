@@ -11,6 +11,8 @@ proc init_project { proj_dir proj_name} {
     close [ open $proj_dir/$proj_name.srcs/constrs_1/new/debug.xdc w ]
     add_files -fileset constrs_1 $proj_dir/$proj_name.srcs/constrs_1/new/debug.xdc
     set_property target_constrs_file $proj_dir/$proj_name.srcs/constrs_1/new/debug.xdc [current_fileset -constrset]
+    set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
+    set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
     close_project
 }
 
@@ -54,7 +56,8 @@ proc project_synth {proj_dir proj_name } {
     wait_on_run synth_1
     close_project
 }
-#creates synth_1/runme.log
+
+#creates impl_1/runme.log
 proc project_impl {proj_dir proj_name } {
     open_project $proj_dir/$proj_name.xpr
     reset_run impl_1

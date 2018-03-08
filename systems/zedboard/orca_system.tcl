@@ -1270,7 +1270,7 @@ proc create_root_design { parentCell } {
   # Create instance: system_ila_orca_masters, and set properties
   set system_ila_orca_masters [ create_bd_cell -type ip -vlnv xilinx.com:ip:system_ila:1.1 system_ila_orca_masters ]
   set_property -dict [ list \
-   CONFIG.C_BRAM_CNT {16} \
+   CONFIG.C_BRAM_CNT {3.5} \
    CONFIG.C_DATA_DEPTH {1024} \
    CONFIG.C_INPUT_PIPE_STAGES {1} \
    CONFIG.C_MON_TYPE {INTERFACE} \
