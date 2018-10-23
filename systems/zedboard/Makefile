@@ -1,29 +1,29 @@
 -include config.mk
-export ORCA_TEST
 
 #Select cached system by default if it exists
-ifeq ($(wildcard orca_system_cached.tcl), )
+ifndef BD_NAME
+ifneq ($(wildcard orca_system_cached.tcl), )
 BD_NAME ?= orca_system
+BD_EXTENSION ?= _cached
 else #ifeq ($(wildcard orca_system_cached.tcl), )
-BD_NAME ?= orca_system_cached
+BD_NAME ?= orca_system
+BD_EXTENSION ?= _tcm
 endif #else #ifeq ($(wildcard orca_system_cached.tcl), )
+endif #ifndef BD_NAME
 
 
 PROJECT_TCL ?= project.tcl
-BD_TCL      ?= $(BD_NAME).tcl
+BD_TCL      ?= $(BD_NAME)$(BD_EXTENSION).tcl
 
 PROJ_DIR  ?= orca_project
 PROJ_NAME ?= orca_project
 
+TEST     ?= test
 SW_DIR   ?= software
-COE_FILE ?= $(SW_DIR)/test.coe
-ELF_FILE ?= $(SW_DIR)/test.elf
-MEM_FILE ?= $(SW_DIR)/test.mem
+COE_FILE = test.coe
 
 PROJ_FILE=$(PROJ_DIR)/$(PROJ_NAME).xpr
 BD_FILE=$(PROJ_DIR)/$(PROJ_NAME).srcs/sources_1/bd/$(BD_NAME)/$(BD_NAME).bd
-HWH_FILE_SRC=$(PROJ_DIR)/$(PROJ_NAME).srcs/sources_1/bd/$(BD_NAME)/hw_handoff/$(BD_NAME).hwh
-HWH_FILE=$(BD_NAME).hwh
 HWDEF_FILE=$(PROJ_DIR)/$(PROJ_NAME).srcs/sources_1/bd/$(BD_NAME)/synth/$(BD_NAME).hwdef
 SYNTH_DCP=$(PROJ_DIR)/$(PROJ_NAME).runs/synth_1/$(BD_NAME)_wrapper.dcp
 IMPL_BIT=$(PROJ_DIR)/$(PROJ_NAME).runs/impl_1/$(BD_NAME)_wrapper.bit
@@ -35,7 +35,7 @@ OUT_BIT=out.bit
 PGM_TCL=pgm.tcl
 
 .PHONY: all
-all: $(OUT_BIT) resource_utilization.rpt link.ld
+all: $(OUT_BIT) resource_utilization.rpt link.ld orca_defines.h
 
 VIVADO_SOURCE=vivado -notrace -nojournal -nolog -mode batch -source
 
@@ -65,9 +65,6 @@ endif #ifdef DIVIDE_ENABLE
 ifdef SHIFTER_MAX_CYCLES
 BD_CHANGES += SHIFTER_MAX_CYCLES $(SHIFTER_MAX_CYCLES)
 endif #ifdef SHIFTER_MAX_CYCLES
-ifdef COUNTER_LENGTH
-BD_CHANGES += COUNTER_LENGTH $(COUNTER_LENGTH)
-endif #ifdef COUNTER_LENGTH
 ifdef ENABLE_EXCEPTIONS
 BD_CHANGES += ENABLE_EXCEPTIONS $(ENABLE_EXCEPTIONS)
 endif #ifdef ENABLE_EXCEPTIONS
@@ -201,27 +198,22 @@ $(BD_FILE): $(PROJECT_TCL) $(BD_TCL) $(wildcard config.mk)
 	$(VIVADO_SOURCE) $(PROJECT_TCL) -tclargs create_bd $(PROJ_DIR) $(PROJ_NAME) $(BD_TCL) $(BD_CHANGES)
 
 .PHONY: archiveBD
-archiveBD: $(HWH_FILE)
+archiveBD: $(HWDEF_FILE)
 
-#we generate the bd design twice, because the hwh is needed to compile the software,
-#and the compiled software is needed to generate the sources.
-$(HWH_FILE): $(BD_FILE) $(ORCA_SRCS)
-	if [ ! -e $(COE_FILE) ]; then echo "memory_initialization_radix=16;" > $(COE_FILE); echo "memory_initialization_vector=0;" >> $(COE_FILE); fi
+$(HWDEF_FILE): $(BD_FILE)
 	rm -f tmp.$(BD_TCL)
+	rm -f $(HWDEF_FILE)
 	$(VIVADO_SOURCE) $(PROJECT_TCL) -tclargs generate_bd_design $(PROJ_DIR) $(PROJ_NAME) tmp.$(BD_TCL)
+	[ -e $(HWDEF_FILE) ]
 	[ -e tmp.$(BD_TCL) ]
-	[ -e $(HWH_FILE_SRC) ]
-	mv tmp.$(BD_TCL) $(BD_TCL)
-	touch $<
-	cp $(HWH_FILE_SRC) $@
+	touch -r $(BD_TCL) tmp.$(BD_TCL)
+	cp -p tmp.$(BD_TCL) $(BD_TCL)
+	rm tmp.$(BD_TCL)
 
-$(HWDEF_FILE): $(COE_FILE)
-	$(VIVADO_SOURCE) $(PROJECT_TCL) -tclargs generate_bd_design $(PROJ_DIR) $(PROJ_NAME)
-	rm -f tmp.$(BD_TCL)
+HSI=hsi -nolog -nojournal -notrace -mode batch -source ../../tools/hsi_orca_addressmap.tcl -tclargs
+orca_defines.h: $(HWDEF_FILE)
+	$(HSI) -h $@  orca $^
 
-
-orca_defines.h: $(HWH_FILE)
-	hsi -notrace -mode batch -source ../../tools/hsi_orca_addressmap.tcl -tclargs $(HWH_FILE) orca $@
 $(SYNTH_DCP): $(HWDEF_FILE)
 	$(VIVADO_SOURCE) $(PROJECT_TCL) -tclargs project_synth $(PROJ_DIR) $(PROJ_NAME)
 
@@ -241,22 +233,21 @@ endif #else #ifdef RESET_VECTOR
 IDRAM_LENGTH            ?= 0x00020000
 
 
-link.ld::
-	sed "s/0x[0-9A-F]\([0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]\)/0x$$(printf "%01X" $$(expr $$(echo $$(printf "%d" $(IDRAM_BASE_ADDRESS))) / $$(echo $$(printf "%d" 0x10000000))))\1/g" $@ > tmp.$@
-	diff -q $@ tmp.$@; if [ $$? != 0 ]; then mv tmp.$@ $@; fi
-	rm -f tmp.$@
+link.ld:$(HWDEF_FILE)
+	$(HSI) -l $@  orca $^
 
-.PHONY: FORCE
-
-$(ELF_FILE): orca_defines.h FORCE
-	$(MAKE) -C $(SW_DIR)
-
-$(COE_FILE): orca_defines.h FORCE
-	$(MAKE) -C $(SW_DIR)
+$(SW_DIR)/$(TEST).coe::
+	$(MAKE) -C $(SW_DIR) $(TEST).coe $(TEST).dump
 
 .PHONY: sim
-sim: $(BD_FILE) $(COE_FILE)
+ifndef TEST
+sim:
+	$(error Define TEST variable before running make sim ($(SW_DIR)/$$(TEST).coe will be used))
+else #ifndef TEST
+sim: $(BD_FILE) $(SW_DIR)/$(TEST).coe
+	ln -sf $(SW_DIR)/$(TEST).coe $(COE_FILE)
 	vivado -nolog -nojournal $(PROJ_FILE) -source simulate.tcl &
+endif #else #ifndef TEST
 
 .PHONY: gui
 gui: $(BD_FILE)
@@ -272,32 +263,26 @@ resource_utilization.rpt: $(IMPL_BIT) $(RESOURCE_TCL)
 	$(VIVADO_SOURCE) $(RESOURCE_TCL) -tclargs report_resources $(PROJ_DIR) $(PROJ_NAME) $@
 
 .PHONY: pgm
-ifneq ($(ELF_FILE), NONE)
 pgm: $(OUT_BIT)
-endif #ifneq ($(ELF_FILE), NONE)
-pgm:
 	xsdb $(PGM_TCL) $(OUT_BIT) ps7_init.tcl
 
-no_elf:
-	echo "no elf"
-	false
-
-yes_elf:
-	echo "yes elf"
-	false
+.PHONY: FORCE
+$(SW_DIR)/$(TEST).ihex: FORCE
+	$(MAKE) -C $(SW_DIR) $(TEST).ihex $(TEST).dump
 
 .PHONY: run
+run: orca_defines.h
+ifndef TEST
 run:
-ifeq ($(ELF_FILE), NONE)
-	python orca_pgm.py test.bin --family=xilinx --reset_address=$(JTAG_RESET_BASE_ADDRESS) --base_address=$(JTAG_IDRAM_BASE_ADDRESS) --end_address=`printf "0x%08X" $$(($(JTAG_IDRAM_BASE_ADDRESS) + $(IDRAM_LENGTH)))` --device=xc7z* --project=$(PROJ_FILE) --debug_nets=$(PROJ_DIR)/$(PROJ_NAME).runs/impl_1/$(BD_NAME)_wrapper.ltx --output_file=jtag_init.tcl
-else #ifeq ($(ELF_FILE), NONE)
-	$(MAKE) -C software test.bin test.dump
-	python orca_pgm.py software/test.bin --family=xilinx --reset_address=$(JTAG_RESET_BASE_ADDRESS) --base_address=$(JTAG_IDRAM_BASE_ADDRESS) --end_address=`printf "0x%08X" $$(($(JTAG_IDRAM_BASE_ADDRESS) + $(IDRAM_LENGTH)))` --device=xc7z* --project=$(PROJ_FILE) --debug_nets=$(PROJ_DIR)/$(PROJ_NAME).runs/impl_1/$(BD_NAME)_wrapper.ltx --output_file=jtag_init.tcl
-endif #else #ifeq ($(ELF_FILE), NONE)
+	$(error Define TEST variable before running make run ($(SW_DIR)/$$(TEST).ihex will be used))
+else #ifndef TEST
+run: $(SW_DIR)/$(TEST).ihex FORCE
+	python ../../tools/orca_pgm.py $(SW_DIR)/$(TEST).ihex  --family=xilinx --reset_address=$(JTAG_RESET_BASE_ADDRESS)
+endif #else #ifndef TEST
 
 .PHONY: clean
 clean:
-	rm -rf $(PROJ_DIR) $(PROJ_NAME).bit $(OUT_BIT) *.jou *.log tmp.* vivado_pid* export_sim/ test.bin jtag_init.tcl resource_utilization.rpt nohup.out *~  \#* .Xil $(HWH_FILE) orca_defines.h
+	rm -rf $(PROJ_DIR) $(PROJ_NAME).bit $(OUT_BIT) *.jou *.log tmp.* vivado_pid* export_sim/ test.bin jtag_init.tcl resource_utilization.rpt nohup.out *~  \#* .Xil orca_defines.h
 	$(MAKE) clean -C $(SW_DIR)
 
 .DELETE_ON_ERROR:

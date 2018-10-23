@@ -1,4 +1,4 @@
-int main(void)
+int test_2(void)
 {
   int data_mem = 0;
   // Specifies the number of pipeline stages in the RAM.
@@ -29,7 +29,7 @@ int main(void)
   // Test a multiply after read.
   asm volatile("lw %0,0(%1)"
     : "=r" (temp)
-    : "r" (&data_mem)); 
+    : "r" (&data_mem));
   asm volatile("mul %0,%1,%2"
     : "=r" (result)
     : "r" (data1), "r" (data2));
@@ -45,7 +45,7 @@ int main(void)
     : "r" (16), "r" (&data_mem));
   asm volatile("lw %0,0(%1)"
     : "=r" (temp)
-    : "r" (&data_mem)); 
+    : "r" (&data_mem));
   asm volatile("srl %0,%1,%2"
     : "=r" (result)
     : "r" (data1), "r" (data2));
@@ -54,5 +54,10 @@ int main(void)
     return 4;
   }
 
-  return 1;
+  return 0;
 }
+typedef int (*test_func)(void) ;
+test_func test_functions[] = {
+	test_2,
+	(void*)0
+};

@@ -9,9 +9,52 @@ proc get_connected_mxp { orca } {
 		  }
 	 }
 }
+proc generate_lscript { hwh_file orca_name} {
 
+	 set hw [open_hw_design $hwh_file]
+	 set orca [get_cells $orca_name]
+	 if { [string length $orca] == 0  } {
+		  puts "No cell named $orca_name"
+		  return ""
+	 }
+	 set reset_vector [get_property CONFIG.RESET_VECTOR $orca]
+	 set mem_ranges [lsort -unique [get_mem_ranges -of_objects $orca ]]
+	 foreach mr $mem_ranges {
+		  set mem_name $mr
+		  set lo_addr [get_property BASE_VALUE $mr]
+		  set hi_addr [get_property HIGH_VALUE $mr]
+		  if { $reset_vector >= $lo_addr && $reset_vector < $hi_addr } {
+				break;
+		  }
+	 }
+	 set input_lscript "[file dirname [file normalize [info script]]]/lscript.template"
+	 set tmpl [open $input_lscript]
+	 set output "/*AUTOMATICALLY GENERATED FILE*/"
+	 while {[gets $tmpl line] != -1} {
+		  #transform $line somehow
+		  if { [string match "*MEM_REGION*" $line] } {
+				foreach mr $mem_ranges {
+					 set mr_lo_addr [get_property BASE_VALUE $mr]
+					 set mr_hi_addr [get_property HIGH_VALUE $mr]
+					 set memline $line
+					 regsub "MEM_REGION" $memline $mr memline
+					 regsub "MEM_ORIGIN" $memline $mr_lo_addr memline
+					 regsub "MEM_LENGTH" $memline [format "0x%x" [expr $mr_hi_addr - $mr_lo_addr +1]] memline
+					 set output "$output\n$memline"
+				}
+				continue
+		  }
+		  regsub "MEM_NAME" $line $mem_name line
+		  regsub "RESET_VECTOR" $line $reset_vector line
+		  regsub "END_OF_MEMORY" $line [format "0x%x" [expr $hi_addr & (~3) ]] line
+		  set output "$output\n$line"
+	 }
+	 close_hw_design $hw
+	 return $output
+
+}
 proc generate_bsp { hwh_file orca_name} {
-	 open_hw_design $hwh_file
+	 set hw [open_hw_design $hwh_file]
 	 set orca [get_cells $orca_name]
 	 if { [string length $orca] == 0  } {
 		  puts "No cell named $orca_name"
@@ -64,17 +107,53 @@ proc generate_bsp { hwh_file orca_name} {
 	 }
 
 	 set bsp "$bsp\n#endif //$def_guard"
+	 close_hw_design $hw
 	 return $bsp
 }
 
 
-if { $::argc != 3 } {
-	 puts "ERROR: usage: bsp_gen.tcl hardware_file.hwh orca_name header_file.h"
+proc usage {} {
+	 puts "ERROR: usage:  [-h header_file.h ] [ -l lscript_file.ld] orca_name hardware_file.hwh"
 	 exit -1
-} else {
-	 set hwh_file [lindex $argv 0 ]
-	 set orca_name [lindex $argv 1 ]
-	 set bsp_h [open [lindex $argv 2 ] "w" ]
-	 puts $bsp_h [generate_bsp $hwh_file $orca_name]
 
+}
+if { $::argc < 3 } {
+	 usage
+} else {
+
+	 set hwh_file [lindex $argv end ]
+	 set orca_name [lindex $argv end-1 ]
+	 set header_file ""
+	 set lscript_file ""
+	 puts "$hwh_file $orca_name"
+	 for {set arg 0} {$arg < [llength $argv]-2 } {incr arg} {
+		  set argstring [lindex $argv $arg]
+		  if { [string equal [string range $argstring  0 1] "-h"] } {
+				if { [string length $argstring ] == 2 } {
+					 set header_file [lindex $argv [expr $arg + 1]]
+					 incr arg
+				} else {
+					 set header_file [string range $argstring 2 end]
+				}
+				continue
+		  }
+		  if { [string equal [string range $argstring  0 1] "-l"] } {
+				if { [string length $argstring ] == 2 } {
+					 set lscript_file [lindex $argv [expr $arg + 1]]
+					 incr arg
+				} else {
+					 set lscript_file [string range $argstring 2 end]
+				}
+		  }
+
+	 }
+	 if { [string length $header_file] } {
+		  set bsp_h [open $header_file "w" ]
+		  puts $bsp_h [generate_bsp $hwh_file $orca_name]
+	 }
+
+	  if { [string length $lscript_file] } {
+		  set lscript [open $lscript_file "w" ]
+		  puts $lscript [generate_lscript $hwh_file $orca_name]
+	 }
 }

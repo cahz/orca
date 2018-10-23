@@ -1,11 +1,11 @@
 #include <stdint.h>
 
-#define TEST_ATTR static __attribute__((noinline))
+
 
 #define TEST_SIZE_WORDS 7
 #define TEST_RUNS       3
 
-TEST_ATTR int test_2()
+int test_2()
 {
   //Test back-to-back word writes followed by reads
 
@@ -26,9 +26,9 @@ TEST_ATTR int test_2()
                     "sw a0, 0(a1)\n"
                     "lw %0, 0(a1)\n"
                     "sw a0, 4(a1)\n"
-                    "lw %1, 4(a1)\n"    
+                    "lw %1, 4(a1)\n"
                     "sw a0, 8(a1)\n"
-                    "lw %2, 8(a1)\n"    
+                    "lw %2, 8(a1)\n"
                     "sw a0, 12(a1)\n"
                     "lw %3, 12(a1)\n"
                     : "=r"(result0), "=r"(result1), "=r"(result2), "=r"(result3)
@@ -53,7 +53,7 @@ TEST_ATTR int test_2()
   return 0;
 }
 
-TEST_ATTR int test_3()
+int test_3()
 {
   //Test back-to-back halfword writes followed by reads
 
@@ -74,9 +74,9 @@ TEST_ATTR int test_3()
                     "sh a0, 0(a1)\n"
                     "lhu %0, 0(a1)\n"
                     "sh a0, 2(a1)\n"
-                    "lhu %1, 2(a1)\n"    
+                    "lhu %1, 2(a1)\n"
                     "sh a0, 4(a1)\n"
-                    "lhu %2, 4(a1)\n"    
+                    "lhu %2, 4(a1)\n"
                     "sh a0, 6(a1)\n"
                     "lhu %3, 6(a1)\n"
                     : "=r"(result0), "=r"(result1), "=r"(result2), "=r"(result3)
@@ -101,7 +101,7 @@ TEST_ATTR int test_3()
   return 0;
 }
 
-TEST_ATTR int test_4()
+int test_4()
 {
   //Test back-to-back byte writes followed by reads
 
@@ -122,9 +122,9 @@ TEST_ATTR int test_4()
                     "sb a0, 0(a1)\n"
                     "lbu %0, 0(a1)\n"
                     "sb a0, 1(a1)\n"
-                    "lbu %1, 1(a1)\n"    
+                    "lbu %1, 1(a1)\n"
                     "sb a0, 2(a1)\n"
-                    "lbu %2, 2(a1)\n"    
+                    "lbu %2, 2(a1)\n"
                     "sb a0, 3(a1)\n"
                     "lbu %3, 3(a1)\n"
                     : "=r"(result0), "=r"(result1), "=r"(result2), "=r"(result3)
@@ -149,40 +149,10 @@ TEST_ATTR int test_4()
   return 0;
 }
 
-//this macro runs the test, and returns the test number on failure
-#define do_test(TEST_NUMBER) do{                \
-    if(test_##TEST_NUMBER()){                   \
-      asm volatile ("slli x28, %0,  1\n"        \
-                    "ori  x28, x28, 1\n"        \
-                    "fence.i\n"                 \
-                    "ecall\n"                   \
-                    : : "r"(TEST_NUMBER));      \
-        return TEST_NUMBER;                     \
-    }                                           \
-  } while(0)
-
-#define pass_test() do{                         \
-    asm volatile ("addi x28, x0, 1\n"           \
-                  "fence.i\n"                   \
-                  "ecall\n");                   \
-    return 0;                                   \
-  } while(0)
-
-int main()
-{
-
-  do_test(2);
-  do_test(3);
-  do_test(4);
-
-  pass_test();
-  return 0;
-}
-
-int handle_interrupt(int cause, int epc, int regs[32]) {
-	if (!((cause >> 31) & 0x1)) {
-		// Handle illegal instruction.
-		for (;;);
-	}
-	return epc;
-}
+typedef int (*test_func)(void) ;
+test_func test_functions[] = {
+	test_2,
+	test_3,
+	test_4,
+	(void*)0
+};

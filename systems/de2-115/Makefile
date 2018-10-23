@@ -1,10 +1,19 @@
 -include config.mk
-export ORCA_TEST
+
+BD_NAME := orca_system
+
+#Select cached system by default if it exists
+ifneq ($(wildcard orca_system_cached.qsys), )
+BD_EXTENSION ?= _cached
+else #ifeq ($(wildcard orca_system_cached.qsys), )
+BD_EXTENSION ?= _tcm
+endif #else #ifeq ($(wildcard orca_system_cached.qsys), )
+
 
 BD_NAME         ?= orca_system
 PROJECT_NAME    ?= orca_project
-CREATE_QSYS_TCL ?= create_$(BD_NAME).tcl
 QSYS_HW_TCL     ?= $(BD_NAME)_hw.tcl
+QSYS_SOURCE     ?= $(BD_NAME)$(BD_EXTENSION).qsys
 QSYS_FILE       ?= $(BD_NAME).qsys
 QPF_FILE        ?= $(PROJECT_NAME).qpf
 IP_DIR          ?= ../../ip
@@ -17,9 +26,10 @@ FIT_RPT_FILE := $(OUTPUT_DIR)/$(PROJECT_NAME).fit.rpt
 ASM_RPT_FILE := $(OUTPUT_DIR)/$(PROJECT_NAME).asm.rpt
 STA_RPT_FILE := $(OUTPUT_DIR)/$(PROJECT_NAME).sta.rpt
 
+TEST     ?= test
 SW_DIR   ?= software
-BIN_FILE ?= test.bin
-HEX_FILE ?= test.hex
+BIN_FILE := $(TEST).bin
+HEX_FILE := $(TEST).qex
 
 #Define DEVICE_FAMILY and DEVICE here
 include board_cfg.mk
@@ -60,9 +70,6 @@ endif #ifdef DIVIDE_ENABLE
 ifdef SHIFTER_MAX_CYCLES
 BD_CHANGES += updateORCA SHIFTER_MAX_CYCLES $(SHIFTER_MAX_CYCLES);
 endif #ifdef SHIFTER_MAX_CYCLES
-ifdef COUNTER_LENGTH
-BD_CHANGES += updateORCA COUNTER_LENGTH $(COUNTER_LENGTH);
-endif #ifdef COUNTER_LENGTH
 ifdef ENABLE_EXCEPTIONS
 BD_CHANGES += updateORCA ENABLE_EXCEPTIONS $(ENABLE_EXCEPTIONS);
 endif #ifdef ENABLE_EXCEPTIONS
@@ -187,29 +194,34 @@ ifdef DC_RETURN_REGISTER
 BD_CHANGES += updateORCA DC_RETURN_REGISTER $(DC_RETURN_REGISTER);
 endif #ifdef DC_RETURN_REGISTER
 
+#Should get generated as part of BSP from system
+orca_defines.h:
+	touch $@
 
-$(QSYS_FILE): $(CREATE_QSYS_TCL) updateORCA.tcl $(wildcard config.mk)
-	qsys-script --search-path="./,$(IP_DIR)/,$$" --cmd="package require qsys; set_project_property DEVICE_FAMILY {$(DEVICE_FAMILY)};set_project_property DEVICE $(DEVICE); source $(CREATE_QSYS_TCL); create_system $@; compose; source updateORCA.tcl; $(BD_CHANGES) save_system $@"
+$(QSYS_FILE): $(QSYS_SOURCE) $(wilcard config.mk)
+	cp $^ $@
 
 .PHONY: gui-qsys
 gui-qsys: $(QSYS_FILE)
 	qsys-edit $(QSYS_FILE) --search-path="./,$(IP_DIR)/,$$" &
 
 .PHONY: archiveBD
-archiveBD: $(QIP_FILE)
+archiveBD:
+	cp $(QSYS_FILE) $(QSYS_SOURCE)
 
 $(QIP_FILE): $(QSYS_FILE) $(IP_DIR)/orca/orca_hw.tcl
 	if [ -e $(SW_DIR)/Makefile ]; then $(MAKE) -C $(SW_DIR) $(HEX_FILE); fi
-	rm -f $(QSYS_HW_TCL)
 	rm -f $@
-	qsys-generate $(QSYS_FILE) --search-path="./,$(IP_DIR)/,$$" --synthesis=VHDL 2>&1 | tee ./synth.$(QSYS_FILE).log
-	qsys-script --search-path="./,$(IP_DIR)/,$$" --system-file=$(QSYS_FILE) --cmd="package require qsys; export_hw_tcl"
-	[ -e $@ ]
-	[ -e $(QSYS_HW_TCL) ]
-	sed 's/set_module_property.*//g' $(QSYS_HW_TCL) | sed 's/package require -exact qsys.*//g' > $(CREATE_QSYS_TCL)
-	rm -f $(QSYS_HW_TCL)
+ifdef BD_CHANGES
+	rm -f tmp.$(QSYS_FILE)
+	qsys-script --search-path="./,$(IP_DIR)/,$$" --cmd="package require qsys; set_project_property DEVICE_FAMILY {$(DEVICE_FAMILY)}; set_project_property DEVICE $(DEVICE); load_system $(QSYS_FILE); source updateORCA.tcl; $(BD_CHANGES) save_system tmp.$(QSYS_FILE)"
+	[ -e tmp.$(QSYS_FILE) ]
+	mv tmp.$(QSYS_FILE) $(QSYS_FILE)
+endif #ifdef BD_CHANGES
+	cp $(QSYS_FILE) $(QSYS_SOURCE)
 	touch $(QSYS_FILE)
-	touch $@
+	qsys-generate $(QSYS_FILE) --search-path="./,$(IP_DIR)/,$$" --synthesis=VHDL 2>&1 | tee ./synth.$(QSYS_FILE).log
+	[ -e $@ ]
 
 $(ORCA_SUBMODULE_FILES): $(BD_NAME)/synthesis/submodules/vblox_orca/% : $(IP_DIR)/orca/hdl/% | $(QIP_FILE)
 	 cp $^ $@
@@ -248,9 +260,6 @@ asm: $(ASM_RPT_FILE)
 .PHONY: sta
 sta: $(STA_RPT_FILE)
 
-.PHONY: testbench
-testbench: $(BD_NAME)/simulation/mentor/software/$(HEX_FILE)
-
 $(BD_NAME)/simulation/mentor/msim_setup.tcl: $(QSYS_FILE) $(SUBMODULE_FILES)
 	qsys-generate $(QSYS_FILE) --search-path="./,$(IP_DIR)/,$$" --simulation=VHDL 2>&1 | tee ./sim.$(QSYS_FILE).log
 	[ -e $@ ]
@@ -263,11 +272,16 @@ $(SW_DIR)/$(HEX_FILE): FORCE
 
 $(BD_NAME)/simulation/mentor/software/$(HEX_FILE): $(BD_NAME)/simulation/mentor/msim_setup.tcl $(SW_DIR)/$(HEX_FILE)
 	mkdir -p $(BD_NAME)/simulation/mentor/software
-	cd $(BD_NAME)/simulation/mentor/software &&	ln -sf ../../../../software/$(HEX_FILE)
+	cd $(BD_NAME)/simulation/mentor/software && ln -sf ../../../../software/$(HEX_FILE) 
 
 .PHONY: sim
+ifndef TEST
+sim:
+	$(error Define TEST variable before running make sim (software/$$(TEST).qex will be used))
+else #ifndef TEST
 sim: $(BD_NAME)/simulation/mentor/software/$(HEX_FILE)
 	vsim -do simulate.tcl
+endif #else #ifndef TEST
 
 .PHONY: clean
 clean:
@@ -279,20 +293,20 @@ clean:
 	$(MAKE) -C $(SW_DIR)/ clean || true
 
 .PHONY: pgm
-ifneq ($(BIN_FILE), NONE)
 pgm: $(PROJECT_NAME).sof
-endif #ifneq ($(BIN_FILE), NONE)
-pgm:
 	quartus_pgm -m JTAG -o P\;$^
 
+$(SW_DIR)/$(BIN_FILE): FORCE
+	$(MAKE) -C $(SW_DIR) $(BIN_FILE) $(addsuffix .dump, $(basename $(BIN_FILE)))
+
 .PHONY: run
+ifndef TEST
 run:
-ifeq ($(BIN_FILE), NONE)
-	python orca_pgm.py test.bin --family=altera --reset_address=0x10000000 --end_address=0x00010000
-else #ifeq ($(BIN_FILE), NONE)
-	$(MAKE) -C $(SW_DIR) $(BIN_FILE)
-	python orca_pgm.py $(SW_DIR)/$(BIN_FILE) --family=altera --reset_address=0x10000000 --end_address=0x00010000
-endif #else #ifeq ($(BIN_FILE), NONE)
+	$(error Define TEST variable before running make run (software/$$(TEST).bin will be used))
+else #ifndef TEST
+run: $(SW_DIR)/$(BIN_FILE) FORCE
+	python orca_pgm.py $(SW_DIR)/$(BIN_FILE) --family=altera --base_address=0x80000000 --reset_address=0xFFFF0000 --end_address=0x80010000
+endif #else #ifndef TEST
 
 .PHONY: terminal-run
 terminal-run:
@@ -330,9 +344,6 @@ help:
 	@echo
 	@echo "   clean:"
 	@echo "     Clean all outputs"
-	@echo
-	@echo "   testbench:"
-	@echo "     Generate testbench from QSYS file"
 	@echo
 	@echo "   sim:"
 	@echo "     Run Modelsim simulator"

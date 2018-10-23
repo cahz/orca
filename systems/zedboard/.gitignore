@@ -6,3 +6,4 @@ jtag_init.tcl
 software/hex_to_coe
 project/
 /tmp.*
+software/rv32*-p-*

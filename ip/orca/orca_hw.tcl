@@ -179,8 +179,8 @@ add_display_item "Exceptions" NUM_EXT_INTERRUPTS PARAMETER
 
 add_display_item "General Parameters" "Performance/Area Optimizations" GROUP
 
-add_parameter MAX_IFETCHES_IN_FLIGHT positive 4
-set_parameter_property MAX_IFETCHES_IN_FLIGHT DEFAULT_VALUE 4
+add_parameter MAX_IFETCHES_IN_FLIGHT positive 1
+set_parameter_property MAX_IFETCHES_IN_FLIGHT DEFAULT_VALUE 1
 set_parameter_property MAX_IFETCHES_IN_FLIGHT DISPLAY_NAME "Maximum Instruction Fetches in Flight"
 set_parameter_property MAX_IFETCHES_IN_FLIGHT TYPE NATURAL
 set_parameter_property MAX_IFETCHES_IN_FLIGHT UNITS None
@@ -247,21 +247,21 @@ set_parameter_property DIVIDE_ENABLE DESCRIPTION \
          "Divide and remainder ops take one cycle per bit when enabled." ]
 add_display_item "Performance/Area Optimizations" DIVIDE_ENABLE PARAMETER
 
-add_parameter COUNTER_LENGTH natural 32
-set_parameter_property COUNTER_LENGTH DISPLAY_NAME "Counter Length"
-set_parameter_property COUNTER_LENGTH TYPE NATURAL
-set_parameter_property COUNTER_LENGTH UNITS None
-set_parameter_property COUNTER_LENGTH ALLOWED_RANGES {0:Disabled 32 64}
-set_parameter_property COUNTER_LENGTH HDL_PARAMETER true
-set_display_item_property COUNTER_LENGTH DISPLAY_HINT boolean
-set_parameter_property COUNTER_LENGTH DESCRIPTION \
+add_parameter MTIME_ENABLE natural 1
+set_parameter_property MTIME_ENABLE DISPLAY_NAME "MTIME CSR Enable"
+set_parameter_property MTIME_ENABLE TYPE NATURAL
+set_parameter_property MTIME_ENABLE UNITS None
+set_parameter_property MTIME_ENABLE ALLOWED_RANGES 0:1
+set_parameter_property MTIME_ENABLE HDL_PARAMETER false
+set_display_item_property MTIME_ENABLE DISPLAY_HINT boolean
+set_parameter_property MTIME_ENABLE DESCRIPTION \
     [concat \
-         "Number of bits in the MTIME/MTIMEH CSR counter.  " \
-         "When disabled MTIME and MTIMEH read back as 0." \
-         "When set to 32, MTIMEH reads back as 0." ]
-add_display_item "Performance/Area Optimizations" COUNTER_LENGTH PARAMETER
+         "Enable the MTIME/MTIMEH CSR.  " \
+         "When enabled the external Timer_Interface port must " \
+         "be connected to an external ORCA Timer component." ]
+add_display_item "Performance/Area Optimizations" MTIME_ENABLE PARAMETER
 
-add_parameter          PIPELINE_STAGES natural 5
+add_parameter          PIPELINE_STAGES natural 4
 set_parameter_property PIPELINE_STAGES HDL_PARAMETER true
 set_parameter_property PIPELINE_STAGES DISPLAY_NAME "Pipeline Stages"
 set_parameter_property PIPELINE_STAGES ALLOWED_RANGES {4 5}
@@ -555,6 +555,19 @@ set_parameter_property UMR0_ADDR_LAST DESCRIPTION \
          "e.g. if UMR0 starts at 0x00000000 and has a span of 0x80000000 URM0_ADDR_LAST is 0x7FFFFFFF." ]
 add_display_item "Uncached AXI4-Lite Masters" UMR0_ADDR_LAST PARAMETER
 
+add_parameter UMR0_READ_ONLY natural 1
+set_parameter_property UMR0_READ_ONLY DISPLAY_NAME "UMR0 Read Only"
+set_parameter_property UMR0_READ_ONLY TYPE NATURAL
+set_parameter_property UMR0_READ_ONLY UNITS None
+set_parameter_property UMR0_READ_ONLY ALLOWED_RANGES 0:1
+set_parameter_property UMR0_READ_ONLY HDL_PARAMETER false
+set_display_item_property UMR0_READ_ONLY DISPLAY_HINT boolean
+set_parameter_property UMR0_READ_ONLY DESCRIPTION \
+    [concat \
+         "Makes UMR0 read-only.  " \
+         "Should be set when cached/uncached regions will not change to save logic and increase fmax." ]
+add_display_item "Uncached AXI4-Lite Masters" UMR0_READ_ONLY PARAMETER
+
 add_parameter          IUC_REQUEST_REGISTER natural 0
 set_parameter_property IUC_REQUEST_REGISTER DEFAULT_VALUE 0
 set_parameter_property IUC_REQUEST_REGISTER HDL_PARAMETER true
@@ -629,6 +642,19 @@ set_parameter_property AMR0_ADDR_BASE DESCRIPTION \
          "Initial base address for auxiliary memory region 0.  " \
          "Should be set to the base address of the default ILMB/DLMB address range." ]
 add_display_item "Avalon Masters" AMR0_ADDR_BASE PARAMETER
+
+add_parameter AMR0_READ_ONLY natural 1
+set_parameter_property AMR0_READ_ONLY DISPLAY_NAME "AMR0 Read Only"
+set_parameter_property AMR0_READ_ONLY TYPE NATURAL
+set_parameter_property AMR0_READ_ONLY UNITS None
+set_parameter_property AMR0_READ_ONLY ALLOWED_RANGES 0:1
+set_parameter_property AMR0_READ_ONLY HDL_PARAMETER false
+set_display_item_property AMR0_READ_ONLY DISPLAY_HINT boolean
+set_parameter_property AMR0_READ_ONLY DESCRIPTION \
+    [concat \
+         "Makes AMR0 read-only.  " \
+         "Should be set when Avalon region will not change to save logic and increase fmax." ]
+add_display_item "Avalon Masters" AMR0_READ_ONLY PARAMETER
 
 add_parameter AMR0_ADDR_LAST Std_Logic_Vector 32'hFFFFFFFF
 set_parameter_property AMR0_ADDR_LAST DEFAULT_VALUE 32'hFFFFFFFF
@@ -1012,14 +1038,29 @@ add_interface_port vcp vcp_data2            data2             Output register_si
 add_interface_port vcp vcp_instruction      instruction       Output 41
 add_interface_port vcp vcp_valid_instr      valid_instr       Output 1
 add_interface_port vcp vcp_ready            ready             Input 1
+add_interface_port vcp vcp_illegal          illegal           Input 1
 add_interface_port vcp vcp_writeback_data   writeback_data    Input register_size
 add_interface_port vcp vcp_writeback_en     writeback_en      Input 1
 add_interface_port vcp vcp_alu_data1        alu_data1         Input register_size
 add_interface_port vcp vcp_alu_data2        alu_data2         Input register_size
-add_interface_port vcp vcp_alu_used         alu_used          Input 1
 add_interface_port vcp vcp_alu_source_valid alu_source_valid  Input  1
 add_interface_port vcp vcp_alu_result       alu_result        Output register_size
 add_interface_port vcp vcp_alu_result_valid alu_result_valid  Output 1
+
+#
+# connection point Timer_Interface
+#
+add_interface Timer_Interface conduit end
+set_interface_property Timer_Interface associatedClock clock
+set_interface_property Timer_Interface associatedReset ""
+set_interface_property Timer_Interface ENABLED true
+set_interface_property Timer_Interface EXPORT_OF ""
+set_interface_property Timer_Interface PORT_NAME_MAP ""
+set_interface_property Timer_Interface CMSIS_SVD_VARIABLES ""
+set_interface_property Timer_Interface SVD_ADDRESS_GROUP ""
+
+add_interface_port Timer_Interface timer_value value Input 64
+add_interface_port Timer_Interface timer_interrupt interrupt Input 1
 
 
 #
@@ -1142,7 +1183,7 @@ proc elaboration_callback {} {
     if { [expr [get_parameter_value RESET_VECTOR] % 4] != 0 } {
         send_message Error "Reset vector must be aligned to 4 bytes."
     }
-    
+
     if { [get_parameter_value ENABLE_EXCEPTIONS] } {
         set_parameter_property INTERRUPT_VECTOR enabled true
         if { [expr [get_parameter_value INTERRUPT_VECTOR] % 4] != 0 } {
@@ -1172,6 +1213,7 @@ proc elaboration_callback {} {
     if { [get_parameter_value AUX_MEMORY_REGIONS] } {
         set_display_item_property AMR0_ADDR_BASE enabled true
         set_display_item_property AMR0_ADDR_LAST enabled true
+        set_display_item_property AMR0_READ_ONLY enabled true
         set_display_item_property IAUX_REQUEST_REGISTER enabled true
         set_display_item_property IAUX_RETURN_REGISTER enabled true
         set_display_item_property DAUX_REQUEST_REGISTER enabled true
@@ -1179,15 +1221,17 @@ proc elaboration_callback {} {
     } else {
         set_display_item_property AMR0_ADDR_BASE enabled false
         set_display_item_property AMR0_ADDR_LAST enabled false
+        set_display_item_property AMR0_READ_ONLY enabled false
         set_display_item_property IAUX_REQUEST_REGISTER enabled false
         set_display_item_property IAUX_RETURN_REGISTER enabled false
         set_display_item_property DAUX_REQUEST_REGISTER enabled false
         set_display_item_property DAUX_RETURN_REGISTER enabled false
     }
-    
+
     if { [get_parameter_value UC_MEMORY_REGIONS] } {
         set_display_item_property UMR0_ADDR_BASE enabled true
         set_display_item_property UMR0_ADDR_LAST enabled true
+        set_display_item_property UMR0_READ_ONLY enabled true
         set_display_item_property IUC_REQUEST_REGISTER enabled true
         set_display_item_property IUC_RETURN_REGISTER enabled true
         set_display_item_property DUC_REQUEST_REGISTER enabled true
@@ -1195,12 +1239,13 @@ proc elaboration_callback {} {
     } else {
         set_display_item_property UMR0_ADDR_BASE enabled false
         set_display_item_property UMR0_ADDR_LAST enabled false
+        set_display_item_property UMR0_READ_ONLY enabled false
         set_display_item_property IUC_REQUEST_REGISTER enabled false
         set_display_item_property IUC_RETURN_REGISTER enabled false
         set_display_item_property DUC_REQUEST_REGISTER enabled false
         set_display_item_property DUC_RETURN_REGISTER enabled false
     }
-    
+
     if { [get_parameter_value ICACHE_SIZE] } {
         set_display_item_property ICACHE_LINE_SIZE enabled true
         set_display_item_property ICACHE_EXTERNAL_WIDTH enabled true
@@ -1226,6 +1271,8 @@ proc elaboration_callback {} {
         set_display_item_property DC_REQUEST_REGISTER enabled false
         set_display_item_property DC_RETURN_REGISTER enabled false
     }
+
+    set_interface_property Timer_Interface ENABLED [expr [get_parameter_value MTIME_ENABLE] > 0 ]
 
     set_interface_property axi_iuc     readIssuingCapability [get_parameter_value MAX_IFETCHES_IN_FLIGHT]
     set_interface_property axi_iuc     combinedIssuingCapability [get_parameter_value MAX_IFETCHES_IN_FLIGHT]

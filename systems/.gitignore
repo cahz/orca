@@ -3,6 +3,10 @@
 jtag_init.tcl
 qdb/
 orca_system/
+orca_system_cached/
+*_system_min/
+*_system_mid/
+*_system_max/
 orca_project/
 *_defaults.qdf
 db/
@@ -10,6 +14,7 @@ quartus_db/
 incremental_db/
 *.hex
 *.ihex
+*.coe
 output_files/
 *.sof
 tmp.*
@@ -21,4 +26,6 @@ init_*.imem
 *.rpt*
 *.summary
 orca_defines.h
-orca_system.hwh
+*.hwh
+PLL*_INFO.txt
+/*.test/

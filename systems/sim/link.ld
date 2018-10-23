@@ -14,8 +14,7 @@
 OUTPUT_ARCH( "riscv" )
 MEMORY
 {
- IMEM : ORIGIN = 0x0, LENGTH = 16K 
- DMEM : ORIGIN = 16K, LENGTH = 16K 
+ MEM : ORIGIN = 0x0, LENGTH = 64K
 }
 /*----------------------------------------------------------------------*/
 /* Sections                                                             */
@@ -30,43 +29,43 @@ SECTIONS
   .text.init . :
   {
 	  *(.text.init)
-  }>IMEM
+  }>MEM
   .text :
   {
     *(.text)
-  }>IMEM
+  }>MEM
   /* data segment */
-  .data : { *(.data) }>DMEM
-  .rodata : { *(.rodata) }>DMEM
+  .data : { *(.data) }>MEM
+  .rodata : { *(.rodata) }>MEM
 
   .sdata : {
     _gp = . + 0x800;
     *(.srodata.cst16) *(.srodata.cst8) *(.srodata.cst4) *(.srodata.cst2) *(.srodata*)
     *(.sdata .sdata.* .gnu.linkonce.s.*)
-  }>DMEM
+  }>MEM
 
   /* bss segment */
   .sbss : {
     *(.sbss .sbss.* .gnu.linkonce.sb.*)
     *(.scommon)
-  }>DMEM
-  .bss : { *(.bss) }>DMEM
+  }>MEM
+  .bss : { *(.bss) }>MEM
 
   /* thread-local data segment */
   .tdata :
   {
     _tls_data = .;
     *(.tdata)
-  }>DMEM
+  }>MEM
   .tbss :
   {
     *(.tbss)
-  }>DMEM
+  }>MEM
 
 
 
   /* End of uninitalized data segement */
   _end = .;
 
-  _end_of_memory = 32K;
+  _end_of_memory = 64K;
 }

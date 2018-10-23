@@ -12,7 +12,7 @@ It has optional AXI3/4 instruction and data caches, a separate AXI4-Lite interfa
 uncached transactions, and an auxiliary interface that can be configured as
 either WISHBONE, Intel Avalon, or Xilinx LMB.
 
-A QSYS component is provided for easy integration into the Intel toolchain, as
+A Qsys component is provided for easy integration into the Intel toolchain, as
 well as a Vivado IPI component for Xilinx integration.
 
 
@@ -41,11 +41,11 @@ subdirectory.
 The zedboard directory contains a Xilinx Vivado sample project that targets the
 Zeboard development board using the Zynq-7000 XC7Z020-CLG484-1 SoC.
 
-The de2-115 directory contains a Intel QSYS/Quartus project that targets the
+The de2-115 directory contains a Intel Qsys/Quartus project that targets the
 DE2-115 (found in the TPad or Veek development systems).
 
 In addition to these example system we provide a system (in the sim directory)
-for use in debug and automated tests using Modelsim.  We use Intel QSYS to help
+for use in debug and automated tests using Modelsim.  We use Intel Qsys to help
 maintain these systems and generate interconnect.  The example systems can be
 simulated in full if desired; see the README in each individual directory for
 details.
@@ -56,7 +56,7 @@ ORCA Core Generics
 
 Below is an overview of the various generics exposed from the top level to
 configure the ORCA core (ORCA external memory interface generics are in a
-separate section below).  If using Intel Quartus/QSYS or Xilinx Vivado a
+separate section below).  If using Intel Quartus/Qsys or Xilinx Vivado a
 graphical interface which simplifies setting the generics is provided.
 
 ### `REGISTER_SIZE` (default = 32)
@@ -109,12 +109,6 @@ configuration option is ignored and the shifter uses the multiplier.
 If this is set to 1, then extra gates are added to improve power usage at the
 expense of area and maximumx frequency.
 
-### `COUNTER_LENGTH` (default = 0)
-
-How many bits the mtime register contains. The RISC-V standard dictates a 64-bit
-counter, but ORCA allows 32-bit and 0-bit (disabled) values to save area in
-embedded systems that do not need a full 64-bit counter.
-
 ### `ENABLE_EXCEPTIONS` (default = 1)
 
 If this is set to 1, then logic is added to allow the processor for supporting
@@ -129,10 +123,9 @@ register file are eliminated to save area at the expense of maxiumum frequency.
 ### `VCP_ENABLE` (default = 0)
 
 Enable the Vector Coprocessor Port (VCP); this connects to VectorBlox's
-proprietary Lightweight Vector Extensions (LVE).  A value of 1 enables the
-32-bit variant of the VCP instructions, while a value of 2 enables both 32-bit
-and 64-bit VCP instructions (no other 64-bit instructions are supported even
-when `VCP_ENABLE` is set to 2).
+proprietary Lightweight Vector Extensions (LVE) or Matrix Processor (MXP).  A
+value of 1 enables the 32-bit variant of the VCP instructions, while a value of
+2 enables both 32-bit and 64-bit VCP instructions.
 
 ### `ENABLE_EXT_INTERRUPTS` (default = 0)
 
@@ -149,6 +142,20 @@ support.
 Enables certain portability workarounds and optimizations when using a specific
 FPGA family.  Currently "GENERIC", "INTEL", "LATTICE", "MICROSEMI", and "XILINX"
 are supported.
+
+
+External MTIME(H) Counter
+----------------------
+
+RISC-V dictates that the MTIME/MTIMEH CSRs are shadows of memory-mapped
+registers.  To allow flexible implementations of this, we have implemented the
+MTIME/MTIMEH counters and timer interrupt as an external component (ORCA Timer)
+which can be found in the ip/orca-timer directory.  Wrappers for Qsys and Vivado
+IPI are provided for the ORCA Timer component as well.
+
+This also makes it possible for extremely small implementations to save space by
+implementing a smaller than 64-bit counter and/or getting rid of the
+memory-mapped interface and instead using a free-running counter.
 
 
 Memory Interfaces
@@ -228,7 +235,7 @@ interfaces that require ID signals from a master.
 
 There are three generics (`AVALON_AUX`, `LMB_AUX`, and `WISHBONE_AUX`) which
 select which protocol the auxiliary memory interface uses, of which at most one
-must be set to one.  In Intel QSYS this is not exposed and Avalon is enabled,
+must be set to one.  In Intel Qsys this is not exposed and Avalon is enabled,
 and likewise in Xilinx Vivado IPI this is not exposed and LMB is enabled.  These
 can be safely ignored if the auxiliary memory interface is not used
 (`AUX_MEMORY_REGIONS` set to 0).

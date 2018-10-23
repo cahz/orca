@@ -122,7 +122,7 @@ architecture rtl of cache_mux is
   signal amr_address_match : std_logic_vector(imax(AUX_MEMORY_REGIONS, 1)-1 downto 0);
   signal umr_base_addr     : address_vector(imax(UC_MEMORY_REGIONS, 1)-1 downto 0);
   signal umr_last_addr     : address_vector(imax(UC_MEMORY_REGIONS, 1)-1 downto 0);
-  signal umr_address_match : std_logic_vector(imax(AUX_MEMORY_REGIONS, 1)-1 downto 0);
+  signal umr_address_match : std_logic_vector(imax(UC_MEMORY_REGIONS, 1)-1 downto 0);
 
   signal c_select   : std_logic;
   signal uc_select  : std_logic;

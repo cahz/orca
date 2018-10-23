@@ -1,5 +1,6 @@
 #ifndef __BSP_H
 #define __BSP_H
+#include "orca_defines.h"
 
 //Dummy BSP
 

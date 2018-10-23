@@ -34,13 +34,6 @@ void disable_xmr(bool umr_not_amr,
 //memory!  Invalidate the cache (or region of memory within the cache)
 //being enabled without writing back before running this function if
 //unsure.
-//
-//Note also that if this disables caches on part or all of memory the
-//programmer must handle what happens should the cache be re-enabled.
-//An IFENCE is used to make sure the data is written back to memory if
-//there is a data cache and a chance of it being disabled, but the
-//disabled cache is not invalidated; that is the responsibility of the
-//programmer.
 void set_xmr(bool umr_not_amr,
              uint8_t xmr_number,
              uint32_t new_base,

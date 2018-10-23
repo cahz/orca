@@ -1,0 +1,59 @@
+
+OUTPUT_ARCH( "riscv" )
+MEMORY
+{
+
+ MEM_REGION : ORIGIN = MEM_ORIGIN , LENGTH = MEM_LENGTH
+}
+/*----------------------------------------------------------------------*/
+/* Sections                                                             */
+/*----------------------------------------------------------------------*/
+ENTRY(_start)
+
+SECTIONS
+{
+
+  /* text: test code section */
+  . = RESET_VECTOR;
+  .text.init . :
+  {
+	  *(.text.init)
+  }>MEM_NAME
+  .text . :
+  {
+    *(.text)
+  }>MEM_NAME
+
+  /* data segment */
+  .data : { *(.data) }>MEM_NAME
+  .rodata : { *(.rodata) }>MEM_NAME
+
+  .sdata : {
+    _gp = . + 0x8000;
+    *(.srodata.cst16) *(.srodata.cst8) *(.srodata.cst4) *(.srodata.cst2) *(.srodata*)
+    *(.sdata .sdata.* .gnu.linkonce.s.*)
+  }>MEM_NAME
+  _bss_start = .;
+  /* bss segment */
+  .sbss : {
+    *(.sbss .sbss.* .gnu.linkonce.sb.*)
+    *(.scommon)
+  }>MEM_NAME
+  .bss : { *(.bss) }>MEM_NAME
+
+  /* thread-local data segment */
+  .tdata :
+  {
+    _tls_data = .;
+    *(.tdata)
+  }>MEM_NAME
+  .tbss :
+  {
+    *(.tbss)
+  }>MEM_NAME
+
+  /* End of uninitalized data segement */
+  _end = .;
+
+  _end_of_memory = END_OF_MEMORY;
+}

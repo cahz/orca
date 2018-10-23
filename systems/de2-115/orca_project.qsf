@@ -36,77 +36,19 @@ set_global_assignment -name TOP_LEVEL_ENTITY orca_project
 #
 # -------------------------------------------------------------------------- #
 
-
-
-#============================================================
-# CLOCK
-#============================================================
-
-#============================================================
-# KEY
-#============================================================
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT EXTRA
 
 #============================================================
-# LEDG
+# Project options
 #============================================================
-
-#============================================================
-# Audio
-#============================================================
-
-#============================================================
-# I2C
-#============================================================
-
-#============================================================
-# TV
-#============================================================
-
-#============================================================
-# VGA
-#============================================================
-
-#============================================================
-# SDRAM
-#============================================================
-
-#============================================================
-# SRAM
-#============================================================
-
-#============================================================
-# Flash
-#============================================================
-
-#============================================================
-# GPIO, GPIO connect to LTM - 4.3" LCD and Touch
-#============================================================
-
-
-#============================================================
-# HSMC, HSMC connect to mtlc - 7" LCD/Touch/Camera
-#============================================================
-
-
-
-
-
-
-
-#Necessary to meet timing at 135MHz+
-
-
-#For consistent LE/M9K usage
-
-
 set_global_assignment -name SDC_FILE orca_project.sdc
 set_global_assignment -name VHDL_FILE orca_project.vhd
 set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
-set_global_assignment -name QIP_FILE db/ip/sld7c65c258/alt_sld_fab.qip
-set_global_assignment -name ENABLE_SIGNALTAP ON
-set_global_assignment -name ORIGINAL_QUARTUS_VERSION 11.1
-set_global_assignment -name LAST_QUARTUS_VERSION 15.1.1
-set_global_assignment -name PROJECT_CREATION_TIME_DATE "17:35:42  DECEMBER 14, 2011"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
@@ -629,3 +571,4 @@ set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to TOUCH_I2C_SCL
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to TOUCH_I2C_SDA
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to TOUCH_INT_n
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name LAST_QUARTUS_VERSION "17.1.0 Standard Edition"

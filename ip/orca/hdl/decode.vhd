@@ -53,9 +53,12 @@ architecture rtl of decode is
   signal from_decode_instruction_signal            : std_logic_vector(from_decode_instruction'range);
   signal from_decode_valid_signal                  : std_logic;
 
-  alias to_decode_rs1_select : std_logic_vector is to_decode_instruction(REGISTER_RS1'range);
-  alias to_decode_rs2_select : std_logic_vector is to_decode_instruction(REGISTER_RS2'range);
-  alias to_decode_rs3_select : std_logic_vector is to_decode_instruction(REGISTER_RD'range);
+  alias to_decode_rs1_select : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0) is
+    to_decode_instruction(REGISTER_RS1'range);
+  alias to_decode_rs2_select : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0) is
+    to_decode_instruction(REGISTER_RS2'range);
+  alias to_decode_rs3_select : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0) is
+    to_decode_instruction(REGISTER_RD'range);
 
   signal rs1_select : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0);
   signal rs2_select : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0);
@@ -74,9 +77,12 @@ architecture rtl of decode is
   alias from_stage1_rs3_select : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0) is
     from_stage1_instruction(REGISTER_RD'range);
 
-  alias from_decode_rs1_select : std_logic_vector is from_decode_instruction_signal(REGISTER_RS1'range);
-  alias from_decode_rs2_select : std_logic_vector is from_decode_instruction_signal(REGISTER_RS2'range);
-  alias from_decode_rs3_select : std_logic_vector is from_decode_instruction_signal(REGISTER_RD'range);
+  alias from_decode_rs1_select : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0) is
+    from_decode_instruction_signal(REGISTER_RS1'range);
+  alias from_decode_rs2_select : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0) is
+    from_decode_instruction_signal(REGISTER_RS2'range);
+  alias from_decode_rs3_select : std_logic_vector(REGISTER_NAME_SIZE-1 downto 0) is
+    from_decode_instruction_signal(REGISTER_RD'range);
 
   signal rs1_data : std_logic_vector(REGISTER_SIZE-1 downto 0);
   signal rs2_data : std_logic_vector(REGISTER_SIZE-1 downto 0);
@@ -130,7 +136,7 @@ begin
   ------------------------------------------------------------------------------
   sixty_four_bit_gen : if VCP_ENABLE = SIXTY_FOUR_BIT generate
     to_decode_sixty_four_bit_instruction <= (not from_decode_incomplete_instruction_signal) when
-                                            to_decode_instruction(6 downto 0) = LVE64_OP else
+                                            to_decode_instruction(6 downto 0) = VCP64_OP else
                                             '0';
     from_decode_incomplete_instruction_signal <= from_stage1_incomplete_instruction;
   end generate sixty_four_bit_gen;

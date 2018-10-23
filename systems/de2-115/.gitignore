@@ -1,4 +1,1 @@
-system_hw.tcl
-PLL*_INFO.txt
-system/
-*.qsys
+orca_system.qsys

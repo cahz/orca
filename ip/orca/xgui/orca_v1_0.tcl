@@ -105,13 +105,13 @@ proc init_gui { IPINST } {
              "Divide and remainder ops take one cycle per bit when enabled." ] \
         $DIVIDE_ENABLE
 
-    set COUNTER_LENGTH [ ipgui::add_param $IPINST -name "COUNTER_LENGTH" -parent $performanceOptionsGroup -widget comboBox ]
+    set MTIME_ENABLE [ ipgui::add_param $IPINST -name "MTIME_ENABLE" -parent $performanceOptionsGroup -widget checkBox ]
     set_property tooltip \
         [concat \
-             "Number of bits in the MTIME/MTIMEH CSR counter.  " \
-             "When disabled MTIME and MTIMEH read back as 0." \
-             "When set to 32, MTIMEH reads back as 0." ] \
-        $COUNTER_LENGTH
+             "Enable the MTIME/MTIMEH CSR.  " \
+             "When enabled the external Timer_Interface port must " \
+             "be connected to an external ORCA Timer component." ] \
+        $MTIME_ENABLE
 
     set PIPELINE_STAGES [ ipgui::add_param $IPINST -name "PIPELINE_STAGES" -parent $performanceOptionsGroup -widget comboBox ]
     set_property tooltip \
@@ -303,6 +303,13 @@ proc init_gui { IPINST } {
              "e.g. if UMR0 starts at 0x00000000 and has a span of 0x80000000 URM0_ADDR_LAST is 0x7FFFFFFF." ] \
         $UMR0_ADDR_LAST
 
+    set UMR0_READ_ONLY [ ipgui::add_param $IPINST -name "UMR0_READ_ONLY" -parent $ucGroup -widget checkBox ]
+    set_property tooltip \
+        [concat \
+             "Makes UMR0 read-only.  " \
+             "Should be set when cached/uncached regions will not change to save logic and increase fmax." ] \
+        $UMR0_READ_ONLY
+
     set IUC_REQUEST_REGISTER [ ipgui::add_param $IPINST -name "IUC_REQUEST_REGISTER" -parent $ucGroup -widget comboBox ]
     set_property tooltip \
         [concat \
@@ -360,6 +367,13 @@ proc init_gui { IPINST } {
              "Note that last address is the highest addressable address not the start of the next address range.  " \
              "e.g. if AMR0 starts at 0x00000000 and has a span of 0x80000000 ARM0_ADDR_LAST is 0x7FFFFFFF." ] \
         $AMR0_ADDR_LAST
+
+    set AMR0_READ_ONLY [ ipgui::add_param $IPINST -name "AMR0_READ_ONLY" -parent $lmbGroup -widget checkBox ]
+    set_property tooltip \
+        [concat \
+             "Makes AMR0 read-only.  " \
+             "Should be set when LMB region will not change to save logic and increase fmax." ] \
+        $AMR0_READ_ONLY
 
     set IAUX_REQUEST_REGISTER [ ipgui::add_param $IPINST -name "IAUX_REQUEST_REGISTER" -parent $lmbGroup -widget comboBox ]
     set_property tooltip \
@@ -484,12 +498,12 @@ proc validate_PARAM_VALUE.SHIFTER_MAX_CYCLES { PARAM_VALUE.SHIFTER_MAX_CYCLES } 
     return true
 }
 
-proc update_PARAM_VALUE.COUNTER_LENGTH { PARAM_VALUE.COUNTER_LENGTH } {
-    # Procedure called to update COUNTER_LENGTH when any of the dependent parameters in the arguments change
+proc update_PARAM_VALUE.MTIME_ENABLE { PARAM_VALUE.MTIME_ENABLE } {
+    # Procedure called to update MTIME_ENABLE when any of the dependent parameters in the arguments change
 }
 
-proc validate_PARAM_VALUE.COUNTER_LENGTH { PARAM_VALUE.COUNTER_LENGTH } {
-    # Procedure called to validate COUNTER_LENGTH
+proc validate_PARAM_VALUE.MTIME_ENABLE { PARAM_VALUE.MTIME_ENABLE } {
+    # Procedure called to validate MTIME_ENABLE
     return true
 }
 
@@ -648,6 +662,20 @@ proc validate_PARAM_VALUE.AMR0_ADDR_LAST { PARAM_VALUE.AMR0_ADDR_LAST } {
     return true
 }
 
+proc update_PARAM_VALUE.AMR0_READ_ONLY { PARAM_VALUE.AMR0_READ_ONLY PARAM_VALUE.AUX_MEMORY_REGIONS } {
+    # Procedure called to update AMR0_READ_ONLY when any of the dependent parameters in the arguments change
+    if { [get_property value ${PARAM_VALUE.AUX_MEMORY_REGIONS} ] } {
+        set_property enabled true ${PARAM_VALUE.AMR0_READ_ONLY}
+    } else {
+        set_property enabled false ${PARAM_VALUE.AMR0_READ_ONLY}
+    }
+}
+
+proc validate_PARAM_VALUE.AMR0_READ_ONLY { PARAM_VALUE.AMR0_READ_ONLY } {
+    # Procedure called to validate AMR0_READ_ONLY
+    return true
+}
+
 proc update_PARAM_VALUE.UC_MEMORY_REGIONS { PARAM_VALUE.UC_MEMORY_REGIONS } {
     # Procedure called to update UC_MEMORY_REGIONS when any of the dependent parameters in the arguments change
 }
@@ -682,6 +710,20 @@ proc update_PARAM_VALUE.UMR0_ADDR_LAST { PARAM_VALUE.UMR0_ADDR_LAST PARAM_VALUE.
 
 proc validate_PARAM_VALUE.UMR0_ADDR_LAST { PARAM_VALUE.UMR0_ADDR_LAST } {
     # Procedure called to validate UMR0_ADDR_LAST
+    return true
+}
+
+proc update_PARAM_VALUE.UMR0_READ_ONLY { PARAM_VALUE.UMR0_READ_ONLY PARAM_VALUE.UC_MEMORY_REGIONS } {
+    # Procedure called to update UMR0_READ_ONLY when any of the dependent parameters in the arguments change
+    if { [get_property value ${PARAM_VALUE.UC_MEMORY_REGIONS} ] } {
+        set_property enabled true ${PARAM_VALUE.UMR0_READ_ONLY}
+    } else {
+        set_property enabled false ${PARAM_VALUE.UMR0_READ_ONLY}
+    }
+}
+
+proc validate_PARAM_VALUE.UMR0_READ_ONLY { PARAM_VALUE.UMR0_READ_ONLY } {
+    # Procedure called to validate UMR0_READ_ONLY
     return true
 }
 
@@ -1017,11 +1059,6 @@ proc update_MODELPARAM_VALUE.SHIFTER_MAX_CYCLES { MODELPARAM_VALUE.SHIFTER_MAX_C
     set_property value [get_property value ${PARAM_VALUE.SHIFTER_MAX_CYCLES}] ${MODELPARAM_VALUE.SHIFTER_MAX_CYCLES}
 }
 
-proc update_MODELPARAM_VALUE.COUNTER_LENGTH { MODELPARAM_VALUE.COUNTER_LENGTH PARAM_VALUE.COUNTER_LENGTH } {
-    # Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
-    set_property value [get_property value ${PARAM_VALUE.COUNTER_LENGTH}] ${MODELPARAM_VALUE.COUNTER_LENGTH}
-}
-
 proc update_MODELPARAM_VALUE.ENABLE_EXCEPTIONS { MODELPARAM_VALUE.ENABLE_EXCEPTIONS PARAM_VALUE.ENABLE_EXCEPTIONS } {
     # Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
     set_property value [get_property value ${PARAM_VALUE.ENABLE_EXCEPTIONS}] ${MODELPARAM_VALUE.ENABLE_EXCEPTIONS}
@@ -1097,6 +1134,11 @@ proc update_MODELPARAM_VALUE.AMR0_ADDR_LAST { MODELPARAM_VALUE.AMR0_ADDR_LAST PA
     set_property value [get_property value ${PARAM_VALUE.AMR0_ADDR_LAST}] ${MODELPARAM_VALUE.AMR0_ADDR_LAST}
 }
 
+proc update_MODELPARAM_VALUE.AMR0_READ_ONLY { MODELPARAM_VALUE.AMR0_READ_ONLY PARAM_VALUE.AMR0_READ_ONLY } {
+    # Procedure called to set VHDL generic/Verilog parameter value(s) lastd on TCL parameter value
+    set_property value [get_property value ${PARAM_VALUE.AMR0_READ_ONLY}] ${MODELPARAM_VALUE.AMR0_READ_ONLY}
+}
+
 proc update_MODELPARAM_VALUE.UC_MEMORY_REGIONS { MODELPARAM_VALUE.UC_MEMORY_REGIONS PARAM_VALUE.UC_MEMORY_REGIONS } {
     # Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
     set_property value [get_property value ${PARAM_VALUE.UC_MEMORY_REGIONS}] ${MODELPARAM_VALUE.UC_MEMORY_REGIONS}
@@ -1110,6 +1152,11 @@ proc update_MODELPARAM_VALUE.UMR0_ADDR_BASE { MODELPARAM_VALUE.UMR0_ADDR_BASE PA
 proc update_MODELPARAM_VALUE.UMR0_ADDR_LAST { MODELPARAM_VALUE.UMR0_ADDR_LAST PARAM_VALUE.UMR0_ADDR_LAST } {
     # Procedure called to set VHDL generic/Verilog parameter value(s) lastd on TCL parameter value
     set_property value [get_property value ${PARAM_VALUE.UMR0_ADDR_LAST}] ${MODELPARAM_VALUE.UMR0_ADDR_LAST}
+}
+
+proc update_MODELPARAM_VALUE.UMR0_READ_ONLY { MODELPARAM_VALUE.UMR0_READ_ONLY PARAM_VALUE.UMR0_READ_ONLY } {
+    # Procedure called to set VHDL generic/Verilog parameter value(s) lastd on TCL parameter value
+    set_property value [get_property value ${PARAM_VALUE.UMR0_READ_ONLY}] ${MODELPARAM_VALUE.UMR0_READ_ONLY}
 }
 
 proc update_MODELPARAM_VALUE.ICACHE_SIZE { MODELPARAM_VALUE.ICACHE_SIZE PARAM_VALUE.ICACHE_SIZE } {

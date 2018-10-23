@@ -9,24 +9,27 @@ entity branch_unit is
   generic (
     REGISTER_SIZE       : positive range 32 to 32;
     SIGN_EXTENSION_SIZE : positive;
-    BTB_ENTRIES         : natural
+    BTB_ENTRIES         : natural;
+    ENABLE_EXCEPTIONS   : boolean
     );
   port (
     clk   : in std_logic;
     reset : in std_logic;
 
-    to_branch_valid   : in  std_logic;
-    rs1_data          : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
-    rs2_data          : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
-    current_pc        : in  unsigned(REGISTER_SIZE-1 downto 0);
-    predicted_pc      : in  unsigned(REGISTER_SIZE-1 downto 0);
-    instruction       : in  std_logic_vector(31 downto 0);
-    sign_extension    : in  std_logic_vector(SIGN_EXTENSION_SIZE-1 downto 0);
+    to_branch_valid     : in  std_logic;
+    from_branch_illegal : out std_logic;
+
+    rs1_data       : in std_logic_vector(REGISTER_SIZE-1 downto 0);
+    rs2_data       : in std_logic_vector(REGISTER_SIZE-1 downto 0);
+    current_pc     : in unsigned(REGISTER_SIZE-1 downto 0);
+    predicted_pc   : in unsigned(REGISTER_SIZE-1 downto 0);
+    instruction    : in std_logic_vector(31 downto 0);
+    sign_extension : in std_logic_vector(SIGN_EXTENSION_SIZE-1 downto 0);
 
     from_branch_valid : out std_logic;
     from_branch_data  : out std_logic_vector(REGISTER_SIZE-1 downto 0);
     to_branch_ready   : in  std_logic;
-
+    target_misaligned : out std_logic;
     to_pc_correction_data      : out unsigned(REGISTER_SIZE-1 downto 0);
     to_pc_correction_source_pc : out unsigned(REGISTER_SIZE-1 downto 0);
     to_pc_correction_valid     : out std_logic;
@@ -56,17 +59,61 @@ architecture rtl of branch_unit is
 
   signal take_if_branch : std_logic;
 
+  alias opcode : std_logic_vector(6 downto 0) is instruction(INSTR_OPCODE'range);
   alias func3  : std_logic_vector(2 downto 0) is instruction(INSTR_FUNC3'range);
-  alias opcode : std_logic_vector(6 downto 0) is instruction(6 downto 0);
 
-  signal is_jal_op  : std_logic;
-  signal is_jalr_op : std_logic;
-  signal is_br_op   : std_logic;
+  signal jal_select    : std_logic;
+  signal jalr_select   : std_logic;
+  signal branch_select : std_logic;
 begin
+  --Decode instruction to select submodule.  All paths must decode to exactly
+  --one submodule.
+  --ASSUMES only JAL_OP | JALR_OP | BRANCH_OP for opcode.
+  process (opcode, func3) is
+  begin
+    jal_select          <= '0';
+    jalr_select         <= '0';
+    branch_select       <= '0';
+    from_branch_illegal <= '0';
+
+    case opcode(3 downto 2) is
+      when "11" =>                      --JAL_OP(3 downto 2)
+        jal_select <= '1';
+      when "01" =>                      --JALR_OP(3 downto 2)
+        if ENABLE_EXCEPTIONS then
+          if func3 = JALR_FUNC3 then
+            jalr_select <= '1';
+          else
+            from_branch_illegal <= '1';
+          end if;
+        else
+          jalr_select <= '1';
+        end if;
+      when "00" =>                      --BRANCH_OP(3 downto 2)
+        if ENABLE_EXCEPTIONS then
+          if func3(2 downto 1) = "01" then
+            from_branch_illegal <= '1';
+          else
+            branch_select <= '1';
+          end if;
+        else
+          branch_select <= '1';
+        end if;
+      when others =>
+        if ENABLE_EXCEPTIONS then
+          from_branch_illegal <= '1';
+        else
+          --Undefined; pick JAL for easy decoding
+          jal_select <= '1';
+        end if;
+    end case;
+
+  end process;
+
   with func3 select
     msb_mask <=
-    '0' when BLTU_OP,
-    '0' when BGEU_OP,
+    '0' when BLTU_FUNC3,
+    '0' when BGEU_FUNC3,
     '1' when others;
 
   op1 <= signed((msb_mask and rs1_data(rs1_data'left)) & rs1_data);
@@ -78,13 +125,12 @@ begin
 
   with func3 select
     take_if_branch <=
-    eq_flag                  when beq_OP,
-    not eq_flag              when bne_OP,
-    lt_flag                  when blt_OP,
-    (not lt_flag) or eq_flag when bge_OP,
-    lt_flag                  when bltu_OP,
-    (not lt_flag) or eq_flag when bgeu_OP,
-    '0'                      when others;
+    (not lt_flag) or eq_flag when BGEU_FUNC3,
+    lt_flag                  when BLTU_FUNC3,
+    (not lt_flag) or eq_flag when BGE_FUNC3,
+    lt_flag                  when BLT_FUNC3,
+    not eq_flag              when BNE_FUNC3,
+    eq_flag                  when others;
 
   b_imm <= unsigned(sign_extension(REGISTER_SIZE-13 downto 0) &
                     instruction(7) & instruction(30 downto 25) &instruction(11 downto 8) & "0");
@@ -100,10 +146,10 @@ begin
     --If there's no branch predictor, any taken branch/jump is a mispredict, and
     --there's no need to use PC+4 (nbranch_target) as a correction
     target_pc <=
-      jal_target  when is_jal_op = '1' else
-      jalr_target when is_jalr_op = '1' else
+      jal_target  when jal_select = '1' else
+      jalr_target when jalr_select = '1' else
       branch_target;
-    mispredict <= (take_if_branch and is_br_op) or is_jal_op or is_jalr_op;
+    mispredict <= (take_if_branch and branch_select) or jal_select or jalr_select;
     process(clk)
     begin
       if rising_edge(clk) then
@@ -135,9 +181,9 @@ begin
     signal was_mispredicted                       : std_logic;
   begin
     target_pc <=
-      jalr_target   when is_jalr_op = '1' else
-      jal_target    when is_jal_op = '1' else
-      branch_target when is_br_op = '1' and take_if_branch = '1' else
+      jalr_target   when jalr_select = '1' else
+      jal_target    when jal_select = '1' else
+      branch_target when branch_select = '1' and take_if_branch = '1' else
       nbranch_target;
     process(clk)
     begin
@@ -176,10 +222,6 @@ begin
   jalr_target    <= jalr_imm + unsigned(rs1_data);
   jal_target     <= jal_imm + current_pc;
 
-  is_jal_op  <= '1' when opcode = JAL_OP    else '0';
-  is_jalr_op <= '1' when opcode = JALR_OP   else '0';
-  is_br_op   <= '1' when opcode = BRANCH_OP else '0';
-
   process(clk)
   begin
     if rising_edge(clk) then
@@ -187,7 +229,9 @@ begin
 
       if to_branch_ready = '1' then
         from_branch_data  <= std_logic_vector(nbranch_target);
-        from_branch_valid <= to_branch_valid and (is_jal_op or is_jalr_op);
+        if target_pc(1 downto 0) = "00" then
+          from_branch_valid <= to_branch_valid and (jal_select or jalr_select) ;
+        end if;
       end if;
 
       if reset = '1' then
@@ -195,4 +239,5 @@ begin
       end if;
     end if;
   end process;
+  target_misaligned <= to_branch_valid when target_pc(1 downto 0) /= "00" else '0';
 end architecture;

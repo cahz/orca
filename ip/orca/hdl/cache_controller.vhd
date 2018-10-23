@@ -16,6 +16,7 @@ entity cache_controller is
     EXTERNAL_WIDTH        : positive;
     LOG2_BURSTLENGTH      : positive;
     POLICY                : cache_policy;
+    REGION_OPTIMIZATIONS  : boolean;
     WRITE_FIRST_SUPPORTED : boolean
     );
   port (
@@ -26,6 +27,8 @@ entity cache_controller is
     from_cache_control_ready : out std_logic;
     to_cache_control_valid   : in  std_logic;
     to_cache_control_command : in  cache_control_command;
+    to_cache_control_base    : in  std_logic_vector(ADDRESS_WIDTH-1 downto 0);
+    to_cache_control_last    : in  std_logic_vector(ADDRESS_WIDTH-1 downto 0);
 
     precache_idle : in  std_logic;
     cache_idle    : out std_logic;

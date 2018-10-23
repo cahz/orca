@@ -1,6 +1,7 @@
 #include "orca_memory.h"
 #include "orca_csrs.h"
 #include "orca_interrupts.h"
+#include "orca_memory.h"
 
 //Check for instruction cache
 bool orca_has_icache(){
@@ -168,21 +169,12 @@ void disable_xmr(bool umr_not_amr,
 //memory!  Invalidate the cache (or region of memory within the cache)
 //being enabled without writing back before running this function if
 //unsure.
-//
-//Note also that if this disables caches on part or all of memory the
-//programmer must handle what happens should the cache be re-enabled.
-//An IFENCE is used to make sure the data is written back to memory if
-//there is a data cache and a chance of it being disabled, but the
-//disabled cache is not invalidated; that is the responsibility of the
-//programmer.
 void set_xmr(bool umr_not_amr,
              uint8_t xmr_number,
              uint32_t new_base,
              uint32_t new_last,
              uint32_t *previous_base_ptr,
              uint32_t *previous_last_ptr){
-  bool data_cache_may_be_disabled = false;
-  
   //To safely set xMRn we need the following conditions:
   //  If the previous and new regions overlap we must not disable that region while setting the new values
   //    Else if IMEM or DMEM was using them there might be no path to memory
@@ -202,135 +194,108 @@ void set_xmr(bool umr_not_amr,
 
   //If D$ exists, we need to check if it may be disabled by this call.
   //
+  //D$ may be disabled if this xMR is being enabled and its new region
+  //is not contained in the previous region.
+  //
   //Note that this may not be the case if there are multiple AMRs/UMRs
   //active; it would be possible to check all of them but for now this
   //is conservative and correct.
-  if(orca_has_dcache()){
-    //D$ may be disabled if this xMR is being enabled and its new
-    //region is not contained in the previous region
-    if((new_last >= new_base) && ((new_last > previous_last) || (new_base < previous_base))){
-      data_cache_may_be_disabled = true;
-    }
+  uint32_t data_cache_flush_base = 0xFFFFFFFF;
+  uint32_t data_cache_flush_last = 0x00000000;
+  if((new_last >= new_base) && ((new_last > previous_last) || (new_base < previous_base))){
+    data_cache_flush_base = 0x00000000;
+    data_cache_flush_last = 0xFFFFFFFF;
   }
 
   //Finally set the values (previous work means they can be set in any order)
-  if(data_cache_may_be_disabled){
-    //If D$ may be disabled then the D$ must be flushed after the
-    //region is modified.  To do so: disable interrupts, set the
-    //region, run an IFENCE to flush the D$, then re-enable
-    //interrupts.  Interrupts must be disabled so that no memory
-    //accesses happen between the last CSR write and the IFENCE.
-    uint32_t previous_mstatus = 0;
-    disable_interrupts(previous_mstatus);
+  //
+  //If D$ may be disabled then the D$ must be flushed after the
+  //region is modified.  To do so: disable interrupts, set the
+  //region, flush the D$, then re-enable
+  //interrupts.  Interrupts must be disabled so that no memory
+  //accesses happen between the last CSR write and the flush.
+  uint32_t previous_mstatus = 0;
+  disable_interrupts(previous_mstatus);
 
-    //CSRR/W must have immediate CSR numbers; use a jump table to index
-    if(umr_not_amr){
-      switch(xmr_number){
-      case 1:
-        asm volatile("csrw " CSR_STRING(CSR_MUMR1_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MUMR1_LAST)", %1\n"
-                     "fence.i\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      case 2:
-        asm volatile("csrw " CSR_STRING(CSR_MUMR2_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MUMR2_LAST)", %1\n"
-                     "fence.i\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      case 3:
-        asm volatile("csrw " CSR_STRING(CSR_MUMR3_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MUMR3_LAST)", %1\n"
-                     "fence.i\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      default:
-        asm volatile("csrw " CSR_STRING(CSR_MUMR0_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MUMR0_LAST)", %1\n"
-                     "fence.i\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      }
-    } else {
-      switch(xmr_number){
-      case 1:
-        asm volatile("csrw " CSR_STRING(CSR_MAMR1_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MAMR1_LAST)", %1\n"
-                     "fence.i\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      case 2:
-        asm volatile("csrw " CSR_STRING(CSR_MAMR2_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MAMR2_LAST)", %1\n"
-                     "fence.i\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      case 3:
-        asm volatile("csrw " CSR_STRING(CSR_MAMR3_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MAMR3_LAST)", %1\n"
-                     "fence.i\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      default:
-        asm volatile("csrw " CSR_STRING(CSR_MAMR0_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MAMR0_LAST)", %1\n"
-                     "fence.i\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      }
+  //CSRR/W must have immediate CSR numbers; use a jump table to index
+  if(umr_not_amr){
+    switch(xmr_number){
+    case 1:
+      asm volatile("csrw " CSR_STRING(CSR_MUMR1_BASE)", %0\n"
+                   "csrw " CSR_STRING(CSR_MUMR1_LAST)", %1\n"
+                   "mv a0, %2\n"
+                   "mv a1, %3\n"
+                   "call orca_flush_dcache_range\n"
+                   :: "r"(new_base), "r"(new_last), "r"(data_cache_flush_base), "r"(data_cache_flush_last) :
+                    "a0", "a1", "a2");
+      break;
+    case 2:
+      asm volatile("csrw " CSR_STRING(CSR_MUMR2_BASE)", %0\n"
+                   "csrw " CSR_STRING(CSR_MUMR2_LAST)", %1\n"
+                   "mv a0, %2\n"
+                   "mv a1, %3\n"
+                   "call orca_flush_dcache_range\n"
+                   :: "r"(new_base), "r"(new_last), "r"(data_cache_flush_base), "r"(data_cache_flush_last) :
+                    "a0", "a1", "a2");
+      break;
+    case 3:
+      asm volatile("csrw " CSR_STRING(CSR_MUMR3_BASE)", %0\n"
+                   "csrw " CSR_STRING(CSR_MUMR3_LAST)", %1\n"
+                   "mv a0, %2\n"
+                   "mv a1, %3\n"
+                   "call orca_flush_dcache_range\n"
+                   :: "r"(new_base), "r"(new_last), "r"(data_cache_flush_base), "r"(data_cache_flush_last) :
+                    "a0", "a1", "a2");
+      break;
+    default:
+      asm volatile("csrw " CSR_STRING(CSR_MUMR0_BASE)", %0\n"
+                   "csrw " CSR_STRING(CSR_MUMR0_LAST)", %1\n"
+                   "mv a0, %2\n"
+                   "mv a1, %3\n"
+                   "call orca_flush_dcache_range\n"
+                   :: "r"(new_base), "r"(new_last), "r"(data_cache_flush_base), "r"(data_cache_flush_last) :
+                    "a0", "a1", "a2");
+      break;
     }
-    restore_interrupts(previous_mstatus);
-
   } else {
-    //If not disabling the D$ then it's safe to just set the memory region.
-
-    //CSRR/W must have immediate CSR numbers; use a jump table to index
-    if(umr_not_amr){
-      switch(xmr_number){
-      case 1:
-        asm volatile("csrw " CSR_STRING(CSR_MUMR1_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MUMR1_LAST)", %1\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      case 2:
-        asm volatile("csrw " CSR_STRING(CSR_MUMR2_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MUMR2_LAST)", %1\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      case 3:
-        asm volatile("csrw " CSR_STRING(CSR_MUMR3_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MUMR3_LAST)", %1\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      default:
-        asm volatile("csrw " CSR_STRING(CSR_MUMR0_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MUMR0_LAST)", %1\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      }
-    } else {
-      switch(xmr_number){
-      case 1:
-        asm volatile("csrw " CSR_STRING(CSR_MAMR1_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MAMR1_LAST)", %1\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      case 2:
-        asm volatile("csrw " CSR_STRING(CSR_MAMR2_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MAMR2_LAST)", %1\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      case 3:
-        asm volatile("csrw " CSR_STRING(CSR_MAMR3_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MAMR3_LAST)", %1\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      default:
-        asm volatile("csrw " CSR_STRING(CSR_MAMR0_BASE)", %0\n"
-                     "csrw " CSR_STRING(CSR_MAMR0_LAST)", %1\n"
-                     :: "r"(new_base), "r"(new_last));
-        break;
-      }
+    switch(xmr_number){
+    case 1:
+      asm volatile("csrw " CSR_STRING(CSR_MAMR1_BASE)", %0\n"
+                   "csrw " CSR_STRING(CSR_MAMR1_LAST)", %1\n"
+                   "mv a0, %2\n"
+                   "mv a1, %3\n"
+                   "call orca_flush_dcache_range\n"
+                   :: "r"(new_base), "r"(new_last), "r"(data_cache_flush_base), "r"(data_cache_flush_last) :
+                    "a0", "a1", "a2");
+      break;
+    case 2:
+      asm volatile("csrw " CSR_STRING(CSR_MAMR2_BASE)", %0\n"
+                   "csrw " CSR_STRING(CSR_MAMR2_LAST)", %1\n"
+                   "mv a0, %2\n"
+                   "mv a1, %3\n"
+                   "call orca_flush_dcache_range\n"
+                   :: "r"(new_base), "r"(new_last), "r"(data_cache_flush_base), "r"(data_cache_flush_last) :
+                    "a0", "a1", "a2");
+      break;
+    case 3:
+      asm volatile("csrw " CSR_STRING(CSR_MAMR3_BASE)", %0\n"
+                   "csrw " CSR_STRING(CSR_MAMR3_LAST)", %1\n"
+                   "mv a0, %2\n"
+                   "mv a1, %3\n"
+                   "call orca_flush_dcache_range\n"
+                   :: "r"(new_base), "r"(new_last), "r"(data_cache_flush_base), "r"(data_cache_flush_last) :
+                    "a0", "a1", "a2");
+      break;
+    default:
+      asm volatile("csrw " CSR_STRING(CSR_MAMR0_BASE)", %0\n"
+                   "csrw " CSR_STRING(CSR_MAMR0_LAST)", %1\n"
+                   "mv a0, %2\n"
+                   "mv a1, %3\n"
+                   "call orca_flush_dcache_range\n"
+                   :: "r"(new_base), "r"(new_last), "r"(data_cache_flush_base), "r"(data_cache_flush_last) :
+                    "a0", "a1", "a2");
+      break;
     }
   }
+  restore_interrupts(previous_mstatus);
 }

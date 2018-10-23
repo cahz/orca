@@ -28,8 +28,17 @@
 #define CSR_MUMR2_LAST 0xBEA
 #define CSR_MUMR3_LAST 0xBEB
 
+
 //MCACHE bits implemented in ORCA
 #define MCACHE_IEXISTS 0x00000001
 #define MCACHE_DEXISTS 0x00000002
+
+#ifndef stringify
+#define _stringify(a) #a
+#define stringify(a) _stringify(a)
+#endif // stringify
+
+#define csrr(name,dst) asm volatile ("csrr %0 ," stringify(name) :"=r"(dst) )
+#define csrw(name,src) asm volatile ("csrw " stringify(name) ",%0" ::"r"(src) )
 
 #endif //#ifndef __ORCA_CSRS_H

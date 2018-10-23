@@ -18,7 +18,6 @@ entity orca is
     MULTIPLY_ENABLE        : natural range 0 to 1          := 0;
     DIVIDE_ENABLE          : natural range 0 to 1          := 0;
     SHIFTER_MAX_CYCLES     : positive range 1 to 32        := 1;
-    COUNTER_LENGTH         : natural                       := 0;
     ENABLE_EXCEPTIONS      : natural                       := 1;
     PIPELINE_STAGES        : natural range 4 to 5          := 5;
     VCP_ENABLE             : natural range 0 to 2          := 0;
@@ -42,11 +41,13 @@ entity orca is
     AUX_MEMORY_REGIONS : natural range 0 to 4          := 1;
     AMR0_ADDR_BASE     : std_logic_vector(31 downto 0) := X"00000000";
     AMR0_ADDR_LAST     : std_logic_vector(31 downto 0) := X"FFFFFFFF";
+    AMR0_READ_ONLY     : natural range 0 to 1          := 1;
 
     --Uncached memory regions (0 to disable)
     UC_MEMORY_REGIONS : natural range 0 to 4          := 0;
     UMR0_ADDR_BASE    : std_logic_vector(31 downto 0) := X"00000000";
     UMR0_ADDR_LAST    : std_logic_vector(31 downto 0) := X"FFFFFFFF";
+    UMR0_READ_ONLY    : natural range 0 to 1          := 1;
 
     --Instruction cache (ICACHE_SIZE 0 to disable)
     ICACHE_SIZE           : natural                  := 0;
@@ -341,20 +342,27 @@ entity orca is
     DLMB_UE           : in  std_logic                              := '0';
 
     ---------------------------------------------------------------------------
+    -- Timer signals
+    ---------------------------------------------------------------------------
+    timer_value     : in  std_logic_vector(63 downto 0) := (others => '0');
+    timer_interrupt : in  std_logic                     := '0';
+    ---------------------------------------------------------------------------
     -- Vector Coprocessor Port
     ---------------------------------------------------------------------------
-    vcp_data0            : out std_logic_vector(REGISTER_SIZE-1 downto 0);
-    vcp_data1            : out std_logic_vector(REGISTER_SIZE-1 downto 0);
-    vcp_data2            : out std_logic_vector(REGISTER_SIZE-1 downto 0);
-    vcp_instruction      : out std_logic_vector(40 downto 0);
-    vcp_valid_instr      : out std_logic;
-    vcp_ready            : in  std_logic                                  := '1';
-    vcp_writeback_data   : in  std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
-    vcp_writeback_en     : in  std_logic                                  := '0';
-    vcp_alu_data1        : in  std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
-    vcp_alu_data2        : in  std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
-    vcp_alu_used         : in  std_logic                                  := '0';
-    vcp_alu_source_valid : in  std_logic                                  := '0';
+    vcp_data0       : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    vcp_data1       : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    vcp_data2       : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    vcp_instruction : out std_logic_vector(40 downto 0);
+    vcp_valid_instr : out std_logic;
+
+    vcp_ready            : in std_logic                                  := '1';
+    vcp_illegal          : in std_logic                                  := '0';
+    vcp_writeback_data   : in std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
+    vcp_writeback_en     : in std_logic                                  := '0';
+    vcp_alu_data1        : in std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
+    vcp_alu_data2        : in std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
+    vcp_alu_source_valid : in std_logic                                  := '0';
+
     vcp_alu_result       : out std_logic_vector(REGISTER_SIZE-1 downto 0);
     vcp_alu_result_valid : out std_logic
     );
@@ -410,6 +418,8 @@ architecture rtl of orca is
   signal from_dcache_control_ready : std_logic;
   signal to_dcache_control_valid   : std_logic;
   signal to_dcache_control_command : cache_control_command;
+  signal to_cache_control_base     : std_logic_vector(REGISTER_SIZE-1 downto 0);
+  signal to_cache_control_last     : std_logic_vector(REGISTER_SIZE-1 downto 0);
 
   signal memory_interface_idle : std_logic;
 
@@ -440,7 +450,6 @@ begin
       DIVIDE_ENABLE          => DIVIDE_ENABLE /= 0,
       SHIFTER_MAX_CYCLES     => SHIFTER_MAX_CYCLES,
       POWER_OPTIMIZED        => POWER_OPTIMIZED /= 0,
-      COUNTER_LENGTH         => COUNTER_LENGTH,
       ENABLE_EXCEPTIONS      => ENABLE_EXCEPTIONS /= 0,
       PIPELINE_STAGES        => PIPELINE_STAGES,
       VCP_ENABLE             => natural_to_vcp(VCP_ENABLE),
@@ -452,10 +461,12 @@ begin
       AUX_MEMORY_REGIONS => AUX_MEMORY_REGIONS,
       AMR0_ADDR_BASE     => AMR0_ADDR_BASE,
       AMR0_ADDR_LAST     => AMR0_ADDR_LAST,
+      AMR0_READ_ONLY     => AMR0_READ_ONLY /= 0,
 
       UC_MEMORY_REGIONS => UC_MEMORY_REGIONS,
       UMR0_ADDR_BASE    => UMR0_ADDR_BASE,
       UMR0_ADDR_LAST    => UMR0_ADDR_LAST,
+      UMR0_READ_ONLY    => UMR0_READ_ONLY /= 0,
 
       HAS_ICACHE => ICACHE_SIZE /= 0,
       HAS_DCACHE => DCACHE_SIZE /= 0
@@ -465,6 +476,8 @@ begin
       reset => reset,
 
       global_interrupts => global_interrupts,
+
+      memory_interface_idle => memory_interface_idle,
 
       --ICache control (Invalidate/flush/writeback)
       from_icache_control_ready => from_icache_control_ready,
@@ -476,7 +489,9 @@ begin
       to_dcache_control_valid   => to_dcache_control_valid,
       to_dcache_control_command => to_dcache_control_command,
 
-      memory_interface_idle => memory_interface_idle,
+      --Cache control common signals
+      to_cache_control_base => to_cache_control_base,
+      to_cache_control_last => to_cache_control_last,
 
       --Instruction memory-mapped master
       ifetch_oimm_address       => ifetch_oimm_address,
@@ -495,6 +510,10 @@ begin
       lsu_oimm_readdatavalid => lsu_oimm_readdatavalid,
       lsu_oimm_waitrequest   => lsu_oimm_waitrequest,
 
+      --Timer signals
+      timer_value     => timer_value,
+      timer_interrupt => timer_interrupt,
+
       --Vector coprocessor port
       vcp_data0            => vcp_data0,
       vcp_data1            => vcp_data1,
@@ -502,11 +521,11 @@ begin
       vcp_instruction      => vcp_instruction,
       vcp_valid_instr      => vcp_valid_instr,
       vcp_ready            => vcp_ready,
+      vcp_illegal          => vcp_illegal,
       vcp_writeback_data   => vcp_writeback_data,
       vcp_writeback_en     => vcp_writeback_en,
       vcp_alu_data1        => vcp_alu_data1,
       vcp_alu_data2        => vcp_alu_data2,
-      vcp_alu_used         => vcp_alu_used,
       vcp_alu_source_valid => vcp_alu_source_valid,
       vcp_alu_result       => vcp_alu_result,
       vcp_alu_result_valid => vcp_alu_result_valid,
@@ -575,6 +594,8 @@ begin
       clk   => clk,
       reset => reset,
 
+      memory_interface_idle => memory_interface_idle,
+
       --Auxiliary/Uncached memory regions
       amr_base_addrs => amr_base_addrs,
       amr_last_addrs => amr_last_addrs,
@@ -591,7 +612,9 @@ begin
       to_dcache_control_valid   => to_dcache_control_valid,
       to_dcache_control_command => to_dcache_control_command,
 
-      memory_interface_idle => memory_interface_idle,
+      --Cache control common signals
+      to_cache_control_base => to_cache_control_base,
+      to_cache_control_last => to_cache_control_last,
 
       --Instruction memory-mapped master
       ifetch_oimm_address       => ifetch_oimm_address,

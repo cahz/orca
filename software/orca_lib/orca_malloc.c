@@ -15,7 +15,7 @@ void init_malloc(void *new_heap, size_t new_heap_size, size_t new_min_alignment)
   heap_size     = new_heap_size;
   min_alignment = new_min_alignment;
 
-  heap_base += (ORCA_PAD_UP(HEAP_START, min_alignment) - HEAP_START);
+  heap_base = (ORCA_PAD_UP(HEAP_START, min_alignment) - HEAP_START);
 }
 
 //A simple malloc() that does contiguous allocation until it reaches the

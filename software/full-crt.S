@@ -2,29 +2,27 @@
 #define REGBYTES 4
 
 .section .text.init
+//Currently we rely on
+//reset vector being .text.init
+//and interrupt vector being .text.init+4
+_reset:
+  j _start
+  j _isr
+
 
 .globl _start
 _start:
   la gp, _gp
   la sp, _end_of_memory
 
+  la t0, _isr
+  csrw mtvec, t0
+
   jal main
-
-  //Store result in t3 and hit an ecall for 'test_done'
-  mv t3, a0
-  fence.i
-  ecall
-
-  //In case the system doesn't support exceptions call the isr manually
-  //mcause and mepc aren't implemented in this case, so all's well      
-  call _isr        
 
 1:
   j 1b
 
-//Currently we rely on having our interrupt_vector set to .text.init +
-//512 (next aligned to 9 bits after the initial startup instructions)
-.align 9
 _isr:
   addi sp, sp, -272
 
@@ -102,20 +100,3 @@ _isr:
   addi sp, sp, 272
 
   mret
-
-
-.global memcpy
-memcpy:
-  addi  a4,a2,-1
-  beqz  a2,2f
-  add   a5,a1,a4
-  add   a0,a0,a4
-  addi  a1,a1,-1
-1:
-  lbu   a4,0(a5)
-  addi  a0,a0,-1
-  addi  a5,a5,-1
-  sb    a4,1(a0)
-  bne   a5,a1,1b
-2:
-  ret

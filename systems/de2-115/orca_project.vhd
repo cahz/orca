@@ -17,24 +17,44 @@ entity orca_project is
     HEX3 : out std_logic_vector(6 downto 0);
     HEX2 : out std_logic_vector(6 downto 0);
     HEX1 : out std_logic_vector(6 downto 0);
-    HEX0 : out std_logic_vector(6 downto 0)
+    HEX0 : out std_logic_vector(6 downto 0);
+
+    DRAM_ADDR  : out   std_logic_vector(12 downto 0);
+    DRAM_BA    : out   std_logic_vector(1 downto 0);
+    DRAM_CAS_N : out   std_logic;
+    DRAM_CKE   : out   std_logic;
+    DRAM_CLK   : out   std_logic;
+    DRAM_CS_N  : out   std_logic;
+    DRAM_DQ    : inout std_logic_vector(31 downto 0);
+    DRAM_DQM   : out   std_logic_vector(3 downto 0);
+    DRAM_RAS_N : out   std_logic;
+    DRAM_WE_N  : out   std_logic
     );
 end entity orca_project;
 
 architecture rtl of orca_project is
   component orca_system is
     port (
-      clk_clk                     : in  std_logic := 'X';  -- clk
-      hex0_export                 : out std_logic_vector(31 downto 0);  -- export
-      hex1_export                 : out std_logic_vector(31 downto 0);  -- export
-      hex2_export                 : out std_logic_vector(31 downto 0);  -- export
-      hex3_export                 : out std_logic_vector(31 downto 0);  -- export
-      ledg_export                 : out std_logic_vector(31 downto 0);  -- export
-      ledr_export                 : out std_logic_vector(31 downto 0);  -- export
-      reset_reset_n               : in  std_logic := 'X';  -- reset_n
-      the_altpll_areset_export    : in  std_logic := 'X';  -- export
-      the_altpll_locked_export    : out std_logic;         -- export
-      the_altpll_phasedone_export : out std_logic          -- export
+      clk_clk                  : in    std_logic                     := 'X';  -- clk
+      hex0_export              : out   std_logic_vector(31 downto 0);  -- export
+      hex1_export              : out   std_logic_vector(31 downto 0);  -- export
+      hex2_export              : out   std_logic_vector(31 downto 0);  -- export
+      hex3_export              : out   std_logic_vector(31 downto 0);  -- export
+      ledg_export              : out   std_logic_vector(31 downto 0);  -- export
+      ledr_export              : out   std_logic_vector(31 downto 0);  -- export
+      reset_reset_n            : in    std_logic                     := 'X';  -- reset_n
+      the_altpll_areset_export : in    std_logic                     := 'X';  -- export
+      the_altpll_locked_export : out   std_logic;  -- export
+      sdram_wire_addr          : out   std_logic_vector(12 downto 0);  -- addr
+      sdram_wire_ba            : out   std_logic_vector(1 downto 0);   -- ba
+      sdram_wire_cas_n         : out   std_logic;  -- cas_n
+      sdram_wire_cke           : out   std_logic;  -- cke
+      sdram_wire_cs_n          : out   std_logic;  -- cs_n
+      sdram_wire_dq            : inout std_logic_vector(31 downto 0) := (others => 'X');  -- dq
+      sdram_wire_dqm           : out   std_logic_vector(3 downto 0);   -- dqm
+      sdram_wire_ras_n         : out   std_logic;  -- ras_n
+      sdram_wire_we_n          : out   std_logic;  -- we_n
+      clk_sdram_clk            : out   std_logic   -- clk
       );
   end component orca_system;
 
@@ -82,17 +102,26 @@ begin
 
   rv : component orca_system
     port map (
-      clk_clk                     => clk,
-      reset_reset_n               => resetn,
-      ledg_export                 => ledg_export,
-      ledr_export                 => ledr_export,
-      hex3_export                 => hex3_export,
-      hex2_export                 => hex2_export,
-      hex1_export                 => hex1_export,
-      hex0_export                 => hex0_export,
-      the_altpll_areset_export    => reset,
-      the_altpll_locked_export    => LEDG(5),
-      the_altpll_phasedone_export => LEDG(6)
+      clk_clk                  => clk,
+      reset_reset_n            => resetn,
+      ledg_export              => ledg_export,
+      ledr_export              => ledr_export,
+      hex3_export              => hex3_export,
+      hex2_export              => hex2_export,
+      hex1_export              => hex1_export,
+      hex0_export              => hex0_export,
+      the_altpll_areset_export => reset,
+      the_altpll_locked_export => LEDG(5),
+      sdram_wire_addr          => DRAM_ADDR,
+      sdram_wire_ba            => DRAM_BA,
+      sdram_wire_cas_n         => DRAM_CAS_N,
+      sdram_wire_cke           => DRAM_CKE,
+      sdram_wire_cs_n          => DRAM_CS_N,
+      sdram_wire_dq            => DRAM_DQ,
+      sdram_wire_dqm           => DRAM_DQM,
+      sdram_wire_ras_n         => DRAM_RAS_N,
+      sdram_wire_we_n          => DRAM_WE_N,
+      clk_sdram_clk            => DRAM_CLK
       );
 
   hex_input <=

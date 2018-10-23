@@ -17,7 +17,6 @@ entity orca_core is
     DIVIDE_ENABLE          : boolean;
     SHIFTER_MAX_CYCLES     : positive range 1 to 32;
     POWER_OPTIMIZED        : boolean;
-    COUNTER_LENGTH         : natural;
     ENABLE_EXCEPTIONS      : boolean;
     PIPELINE_STAGES        : natural range 4 to 5;
     ENABLE_EXT_INTERRUPTS  : boolean;
@@ -29,10 +28,12 @@ entity orca_core is
     AUX_MEMORY_REGIONS : natural range 0 to 4;
     AMR0_ADDR_BASE     : std_logic_vector(31 downto 0);
     AMR0_ADDR_LAST     : std_logic_vector(31 downto 0);
+    AMR0_READ_ONLY     : boolean;
 
     UC_MEMORY_REGIONS : natural range 0 to 4;
     UMR0_ADDR_BASE    : std_logic_vector(31 downto 0);
     UMR0_ADDR_LAST    : std_logic_vector(31 downto 0);
+    UMR0_READ_ONLY    : boolean;
 
     HAS_ICACHE : boolean;
     HAS_DCACHE : boolean
@@ -42,6 +43,8 @@ entity orca_core is
     reset : in std_logic;
 
     global_interrupts : in std_logic_vector(NUM_EXT_INTERRUPTS-1 downto 0);
+
+    memory_interface_idle : in std_logic;
 
     --ICache control (Invalidate/flush/writeback)
     from_icache_control_ready : in     std_logic;
@@ -53,7 +56,9 @@ entity orca_core is
     to_dcache_control_valid   : buffer std_logic;
     to_dcache_control_command : out    cache_control_command;
 
-    memory_interface_idle : in std_logic;
+    --Cache control common signals
+    to_cache_control_base : out std_logic_vector(REGISTER_SIZE-1 downto 0);
+    to_cache_control_last : out std_logic_vector(REGISTER_SIZE-1 downto 0);
 
     --Instruction ORCA-internal memory-mapped master
     ifetch_oimm_address       : buffer std_logic_vector(REGISTER_SIZE-1 downto 0);
@@ -78,6 +83,10 @@ entity orca_core is
     umr_base_addrs : out std_logic_vector((imax(UC_MEMORY_REGIONS, 1)*REGISTER_SIZE)-1 downto 0);
     umr_last_addrs : out std_logic_vector((imax(UC_MEMORY_REGIONS, 1)*REGISTER_SIZE)-1 downto 0);
 
+    --Timer signals
+    timer_value     : in std_logic_vector(63 downto 0);
+    timer_interrupt : in std_logic;
+
     --Vector coprocessor port
     vcp_data0            : out std_logic_vector(REGISTER_SIZE-1 downto 0);
     vcp_data1            : out std_logic_vector(REGISTER_SIZE-1 downto 0);
@@ -85,11 +94,11 @@ entity orca_core is
     vcp_instruction      : out std_logic_vector(40 downto 0);
     vcp_valid_instr      : out std_logic;
     vcp_ready            : in  std_logic;
+    vcp_illegal          : in  std_logic;
     vcp_writeback_data   : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
     vcp_writeback_en     : in  std_logic;
     vcp_alu_data1        : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
     vcp_alu_data2        : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
-    vcp_alu_used         : in  std_logic;
     vcp_alu_source_valid : in  std_logic;
     vcp_alu_result       : out std_logic_vector(REGISTER_SIZE-1 downto 0);
     vcp_alu_result_valid : out std_logic
@@ -231,7 +240,6 @@ begin
       DIVIDE_ENABLE         => DIVIDE_ENABLE,
       POWER_OPTIMIZED       => POWER_OPTIMIZED,
       SHIFTER_MAX_CYCLES    => SHIFTER_MAX_CYCLES,
-      COUNTER_LENGTH        => COUNTER_LENGTH,
       ENABLE_EXCEPTIONS     => ENABLE_EXCEPTIONS,
       ENABLE_EXT_INTERRUPTS => ENABLE_EXT_INTERRUPTS,
       NUM_EXT_INTERRUPTS    => NUM_EXT_INTERRUPTS,
@@ -241,10 +249,12 @@ begin
       AUX_MEMORY_REGIONS => AUX_MEMORY_REGIONS,
       AMR0_ADDR_BASE     => AMR0_ADDR_BASE,
       AMR0_ADDR_LAST     => AMR0_ADDR_LAST,
+      AMR0_READ_ONLY     => AMR0_READ_ONLY,
 
       UC_MEMORY_REGIONS => UC_MEMORY_REGIONS,
       UMR0_ADDR_BASE    => UMR0_ADDR_BASE,
       UMR0_ADDR_LAST    => UMR0_ADDR_LAST,
+      UMR0_READ_ONLY    => UMR0_READ_ONLY,
 
       HAS_ICACHE => HAS_ICACHE,
       HAS_DCACHE => HAS_DCACHE
@@ -300,6 +310,9 @@ begin
       to_dcache_control_valid   => to_dcache_control_valid,
       to_dcache_control_command => to_dcache_control_command,
 
+      to_cache_control_base => to_cache_control_base,
+      to_cache_control_last => to_cache_control_last,
+
       amr_base_addrs => amr_base_addrs,
       amr_last_addrs => amr_last_addrs,
       umr_base_addrs => umr_base_addrs,
@@ -307,22 +320,25 @@ begin
 
       pause_ifetch => from_execute_pause_ifetch,
 
+      timer_value     => timer_value,
+      timer_interrupt => timer_interrupt,
+
       vcp_data0            => vcp_data0,
       vcp_data1            => vcp_data1,
       vcp_data2            => vcp_data2,
       vcp_instruction      => vcp_instruction,
       vcp_valid_instr      => vcp_valid_instr,
       vcp_ready            => vcp_ready,
+      vcp_illegal          => vcp_illegal,
       vcp_writeback_data   => vcp_writeback_data,
       vcp_writeback_en     => vcp_writeback_en,
       vcp_alu_data1        => vcp_alu_data1,
       vcp_alu_data2        => vcp_alu_data2,
-      vcp_alu_used         => vcp_alu_used,
       vcp_alu_source_valid => vcp_alu_source_valid,
       vcp_alu_result       => vcp_alu_result,
       vcp_alu_result_valid => vcp_alu_result_valid
       );
 
-  core_idle              <= ifetch_idle and decode_idle and execute_idle;
+  core_idle <= ifetch_idle and decode_idle and execute_idle;
 
 end architecture rtl;

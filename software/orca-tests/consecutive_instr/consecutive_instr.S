@@ -65,8 +65,11 @@ main:
   call    do_tests
   lw      ra,4(sp)
   addi    sp,sp,4
+  mv      x3,a0
+  fence.i
+  ecall
   ret
-  
+
 
 .data
 data_3_0:
