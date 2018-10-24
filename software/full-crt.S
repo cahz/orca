@@ -1,5 +1,4 @@
 #include "orca_csrs.h"
-#define REGBYTES 4
 
 .section .text.init
 //Currently we rely on
