@@ -69,7 +69,9 @@ Address that the first instruction to be executed at reset is located.
 
 ### `INTERRUPT_VECTOR` (default = 0x0000 0200)
 
-Address that will be jumped to when an interrupt is received.
+Reset value of the `mtvec` register. The register defines the address of the
+first instruction to be executed on machine traps (i.e., interrupts and 
+exceptions). The value of `mtvec` can be changed via software after reset.
 
 ### `MAX_IFETCHES_IN_FLIGHT` (default = 1)
 
