@@ -5,6 +5,10 @@ SoC, found on the Zedboard development kit.
 
 ## Building
 
+To build the hardware or software for the Zedboard system you will
+need to source the appropriate Vivado tools
+(e.g. '. opt/xilinx/Vivado/2017.4/settings64.sh' in bash).
+
 The build process can be done completely from the command line by the included
 Makefile (just run `make`).  Alternatively, running `make gui` will create the
 project and open Vivado so you can use the GUI tools from there.
