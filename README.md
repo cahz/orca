@@ -16,15 +16,6 @@ A Qsys component is provided for easy integration into the Intel toolchain, as
 well as a Vivado IPI component for Xilinx integration.
 
 
-GitHub Release Note (No Cache Support)
------------------
-
-The GitHub release of ORCA currently does not have support for caches; when
-enabled the RTL will fail to build with an assertion error.  Cache support will
-be released later; for now it is recommended to use low-latency onchip RAM for
-instructions and often-used data memory (stack segments, etc.).
-
-
 Building Toolchain
 -----------------
 

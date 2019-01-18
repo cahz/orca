@@ -15,7 +15,7 @@ mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 
 export BINUTILS_VERSION=2.30
-export GCC_VERSION=8.1.0
+export GCC_VERSION=8.2.0
 export NEWLIB_VERSION=3.0.0
 
 [ ! -f binutils-$BINUTILS_VERSION.tar.gz ] && wget http://ftpmirror.gnu.org/binutils/binutils-$BINUTILS_VERSION.tar.gz
@@ -25,7 +25,7 @@ export NEWLIB_VERSION=3.0.0
 	 printf "Extracting Archives ... "
 	 rm -rf binutils-$BINUTILS_VERSION
 	 rm -rf gcc-$GCC_VERSION
-	 #rm -rf newlib-$NEWLIB_VERSION
+	 rm -rf newlib-$NEWLIB_VERSION
 	 tar -xf binutils-$BINUTILS_VERSION.tar.gz &
 	 tar -xf gcc-$GCC_VERSION.tar.gz &
 	 tar -xf newlib-$NEWLIB_VERSION.tar.gz &
