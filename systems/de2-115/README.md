@@ -3,6 +3,18 @@ platforms are untested.  This system targets a DE2-115 development board, and
 can be run on the Tpad or Veek development boards which use a DE2-115 as their
 base.
 
+
+## Environment Setup
+
+In order to build you will need to source the Intel tools.  The easiest way to
+dothis is to run the Nios 2 command shell, e.g.
+`/opt/intelFPGA_pro/18.1/nios2eds/nios2_command_shell.sh` (replacing
+/opt/intelFPGA_pro/18.1 with wherever your tools are installed).
+
+For non-US English languages you may also need to set the `LC_ALL` environment
+variable; e.g. for Turkish: `export LC_ALL=en_US.UTF-8`
+
+
 ## Building
 
 The build process can be done completely from the command line by the included
@@ -21,6 +33,10 @@ and then open Quartus.
 The Makefile includes pgm and run targets.  `make pgm` will download the
 bitstream to the board.  `make run` will load the program built from the
 software/ directory into instruction memory and reset the processor.
+
+Outputs cannot be seen on HEX when using make run. You can use the 
+`make terminal-run` command to see program outputs. In this way,
+outputs can be seen via terminal.
 
 
 ## Changing Only ORCA Parameters
