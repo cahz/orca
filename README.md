@@ -23,6 +23,17 @@ To build the toolchain, set `RISCV_INSTALL` to be the destination directory for
 the toolchain, for instance `/opt/riscv/`, then run
 `GIT_TOP/tools/riscv-toolchain/build-toolchain.sh`.
 
+Path
+-----------------
+We need to add environment variables to our bashrc file. `nano ~/.bashrc`
+
+export QSYS_ROOTDIR="~/intelFPGA_lite/17.1/quartus/sopc_builder/bin"
+export PATH=$PATH:~/intelFPGA_lite/17.1/quartus/sopc_builder/bin
+export PATH=$PATH:~/intelFPGA_lite/17.1/quartus/bin/
+
+If your language is Turkish:
+export LC_ALL=en_US.UTF-8
+
 Sample Systems
 --------------
 

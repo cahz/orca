@@ -22,6 +22,10 @@ The Makefile includes pgm and run targets.  `make pgm` will download the
 bitstream to the board.  `make run` will load the program built from the
 software/ directory into instruction memory and reset the processor.
 
+Outputs cannot be seen on HEX when using make run. You can use the 
+`make terminal-run` command to see program outputs. In this way,
+outputs can be seen via terminal.
+
 
 ## Changing Only ORCA Parameters
 
