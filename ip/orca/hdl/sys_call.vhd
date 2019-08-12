@@ -49,6 +49,8 @@ entity sys_call is
     rs2_data             : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
     from_syscall_ready   : out std_logic;
 
+    new_instret : in std_logic;
+
     from_branch_misaligned : in std_logic;
 
     illegal_instruction : in std_logic;
@@ -107,12 +109,19 @@ architecture rtl of sys_call is
   signal mtval        : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
   signal mtime        : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
   signal mtimeh       : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
+  signal mcycle       : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
+  signal mcycleh      : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
+  signal minstret     : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
+  signal minstreth    : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
   signal meimask      : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
   signal meimask_full : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
   signal meipend      : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
   signal mcache       : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
   signal misa         : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
   signal mtvec        : std_logic_vector(REGISTER_SIZE-1 downto 0) := (others => '0');
+
+  signal cycle   : unsigned(63 downto 0);
+  signal instret : unsigned(63 downto 0);
 
   alias csr_number : std_logic_vector(CSR_ADDRESS'length-1 downto 0) is instruction(CSR_ADDRESS'range);
   alias opcode     : std_logic_vector(INSTR_OPCODE'length-1 downto 0) is instruction(INSTR_OPCODE'range);
@@ -227,7 +236,24 @@ begin
     end if;
   end process;
 
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      cycle <= cycle + to_unsigned(1, cycle'length);
+      if new_instret = '1' then
+        instret <= instret + to_unsigned(1, instret'length);
+      end if;
 
+      if reset = '1' then
+        cycle   <= to_unsigned(0, cycle'length);
+        instret <= to_unsigned(0, instret'length);
+      end if;
+    end if;
+  end process;
+  mcycle    <= std_logic_vector(cycle(31 downto 0));
+  mcycleh   <= std_logic_vector(cycle(63 downto 32));
+  minstret  <= std_logic_vector(instret(31 downto 0));
+  minstreth <= std_logic_vector(instret(63 downto 32));
 
   mtime  <= std_logic_vector(timer_value(REGISTER_SIZE-1 downto 0));
   mtimeh <= std_logic_vector(timer_value(timer_value'left downto timer_value'left-REGISTER_SIZE+1));
@@ -251,6 +277,10 @@ begin
     mtimeh          when CSR_MTIMEH,
     mtime           when CSR_UTIME,
     mtimeh          when CSR_UTIMEH,
+    mcycle          when CSR_MCYCLE,
+    mcycleh         when CSR_MCYCLEH,
+    minstret        when CSR_MINSTRET,
+    minstreth       when CSR_MINSTRETH,
     mcache          when CSR_MCACHE,
     mtvec           when CSR_MTVEC,
     mamr_base(0)    when CSR_MAMR0_BASE,
