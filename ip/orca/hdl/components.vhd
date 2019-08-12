@@ -1182,8 +1182,12 @@ package rv_components is
       rs2_data             : in  std_logic_vector(REGISTER_SIZE-1 downto 0);
       from_syscall_ready   : out std_logic;
 
-      illegal_instruction : in std_logic;
+      new_instret : in std_logic;
+
       from_branch_misaligned : in std_logic;
+
+      illegal_instruction : in std_logic;
+
       from_lsu_addr_misalign : in std_logic;
       from_lsu_address       : in std_logic_vector(REGISTER_SIZE-1 downto 0);
 
@@ -1219,7 +1223,6 @@ package rv_components is
       vcp_writeback_data : in std_logic_vector(REGISTER_SIZE-1 downto 0)
       );
   end component sys_call;
-
 
   component ram_mux is
     generic (

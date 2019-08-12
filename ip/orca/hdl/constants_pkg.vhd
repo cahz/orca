@@ -94,20 +94,24 @@ package constants_pkg is
 
 
 --CSR Addresses
-  constant CSR_ADDRESS  : std_logic_vector(31 downto 20) := (others => '-');
-  constant CSR_MSTATUS  : std_logic_vector(11 downto 0)  := x"300";
-  constant CSR_MISA     : std_logic_vector(11 downto 0)  := x"301";
-  constant CSR_MIE      : std_logic_vector(11 downto 0)  := x"304";
-  constant CSR_MTVEC    : std_logic_vector(11 downto 0)  := x"305";
-  constant CSR_MSCRATCH : std_logic_vector(11 downto 0)  := x"340";
-  constant CSR_MEPC     : std_logic_vector(11 downto 0)  := x"341";
-  constant CSR_MCAUSE   : std_logic_vector(11 downto 0)  := x"342";
-  constant CSR_MTVAL    : std_logic_vector(11 downto 0)  := x"343";
-  constant CSR_MIP      : std_logic_vector(11 downto 0)  := x"344";
-  constant CSR_MTIME    : std_logic_vector(11 downto 0)  := x"F01";
-  constant CSR_MTIMEH   : std_logic_vector(11 downto 0)  := x"F81";
-  constant CSR_UTIME    : std_logic_vector(11 downto 0)  := x"C01";
-  constant CSR_UTIMEH   : std_logic_vector(11 downto 0)  := x"C81";
+  constant CSR_ADDRESS   : std_logic_vector(31 downto 20) := (others => '-');
+  constant CSR_MSTATUS   : std_logic_vector(11 downto 0)  := x"300";
+  constant CSR_MISA      : std_logic_vector(11 downto 0)  := x"301";
+  constant CSR_MIE       : std_logic_vector(11 downto 0)  := x"304";
+  constant CSR_MTVEC     : std_logic_vector(11 downto 0)  := x"305";
+  constant CSR_MSCRATCH  : std_logic_vector(11 downto 0)  := x"340";
+  constant CSR_MEPC      : std_logic_vector(11 downto 0)  := x"341";
+  constant CSR_MCAUSE    : std_logic_vector(11 downto 0)  := x"342";
+  constant CSR_MTVAL     : std_logic_vector(11 downto 0)  := x"343";
+  constant CSR_MIP       : std_logic_vector(11 downto 0)  := x"344";
+  constant CSR_UTIME     : std_logic_vector(11 downto 0)  := x"C01";
+  constant CSR_UTIMEH    : std_logic_vector(11 downto 0)  := x"C81";
+  constant CSR_MCYCLE    : std_logic_vector(11 downto 0)  := x"F00";
+  constant CSR_MTIME     : std_logic_vector(11 downto 0)  := x"F01";
+  constant CSR_MINSTRET  : std_logic_vector(11 downto 0)  := x"F02";
+  constant CSR_MCYCLEH   : std_logic_vector(11 downto 0)  := x"F80";
+  constant CSR_MTIMEH    : std_logic_vector(11 downto 0)  := x"F81";
+  constant CSR_MINSTRETH : std_logic_vector(11 downto 0)  := x"F82";
 
 --NON-STANDARD
   constant CSR_MEIMASK    : std_logic_vector(11 downto 0) := x"7C0";

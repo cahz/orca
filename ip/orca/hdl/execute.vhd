@@ -191,6 +191,8 @@ architecture behavioural of execute is
   signal vcp_select           : std_logic;
   signal to_vcp_valid         : std_logic;
 
+  signal new_instret : std_logic;
+
   signal from_opcode_illegal : std_logic;
   signal illegal_instruction : std_logic;
 
@@ -295,6 +297,9 @@ begin
                                                                         (lsu_select and from_lsu_illegal) or
                                                                         (syscall_select and from_syscall_illegal) or
                                                                         (vcp_select and vcp_illegal));
+
+  --New instruction retired, for incrementing MINSTRET(H).
+  new_instret <= to_execute_valid and from_execute_ready and (not illegal_instruction);
 
 
   -----------------------------------------------------------------------------
@@ -494,6 +499,8 @@ begin
       instruction          => to_execute_instruction(INSTRUCTION32'range),
       current_pc           => to_execute_program_counter,
       from_syscall_ready   => from_syscall_ready,
+
+      new_instret => new_instret,
 
       from_branch_misaligned => from_branch_misaligned,
       illegal_instruction    => illegal_instruction,
